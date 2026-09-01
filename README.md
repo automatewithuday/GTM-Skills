@@ -52,6 +52,12 @@ Skills trigger automatically when your request matches their description, or inv
 | [`champion-move-detection`](skills/champion-move-detection/SKILL.md) | Running a monthly sweep for customer champions and heavy users who changed jobs — live-LinkedIn verification with wrong-person and stale-headline guards, one MQL per move, churn flags on the account they left. Never sends. |
 | [`closed-won-replication-play`](skills/closed-won-replication-play/SKILL.md) | A deal just closed won — find lookalike companies not yet in the CRM, draft outreach from the deal owner with an anonymized win reference, and queue one batch review task. Nothing sends without approval. |
 
+### Outreach
+
+| Skill | Use when |
+|---|---|
+| [`b2b-cold-email-copywriting`](skills/b2b-cold-email-copywriting/SKILL.md) | Writing or fixing cold email that has to land in the inbox and get replies at volume — Big-3 diagnosis order (list, offer, copy), deliverability prerequisites, five frameworks, personalisation ladder, interest-based CTAs, follow-up arc, spintax, banned words, and a pre-send QA checklist. |
+
 ### Cold email operations
 
 The full cold outbound stack, in the order you'd run it. New to cold email? Start with [`cold-email-kickoff`](skills/cold-email-kickoff/SKILL.md).
