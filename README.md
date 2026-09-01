@@ -45,7 +45,13 @@ Skills trigger automatically when your request matches their description, or inv
 | [`abm-retargeting`](skills/abm-retargeting/SKILL.md) | Planning or fixing retargeting for ABM accounts — engagement tiers, frequency caps and creative rotation, a day-by-day multi-channel play, LinkedIn/Meta/Google audience setup, and the HubSpot → LinkedIn sync loop. |
 | [`abm-target-accounts`](skills/abm-target-accounts/SKILL.md) | Building or sizing a target account list — how many accounts a revenue target needs, lookalikes and ICP scoring (Clay, BuiltWith, Apollo), A–D tiers, HubSpot stage lists and automation, LinkedIn sync, and what a 90-day vs mature program looks like. |
 
-*More skills are being added — outbound & prospecting, paid media, attribution & analytics, sales process, messaging.*
+### Outbound & Prospecting
+
+| Skill | Use when |
+|---|---|
+| [`closed-won-replication-play`](skills/closed-won-replication-play/SKILL.md) | A deal just closed won — find lookalike companies not yet in the CRM, draft outreach from the deal owner with an anonymized win reference, and queue one batch review task. Nothing sends without approval. |
+
+*More skills are being added — paid media, attribution & analytics, sales process, messaging.*
 
 ## Using a skill well
 
