@@ -43,6 +43,7 @@ Skills trigger automatically when your request matches their description, or inv
 |---|---|
 | [`abm-measurement`](skills/abm-measurement/SKILL.md) | Measuring, reporting on, or auditing an ABM program — stage metrics, attribution models, ROI/CAC/velocity formulas, benchmarks, and a measurement-maturity check. |
 | [`abm-retargeting`](skills/abm-retargeting/SKILL.md) | Planning or fixing retargeting for ABM accounts — engagement tiers, frequency caps and creative rotation, a day-by-day multi-channel play, LinkedIn/Meta/Google audience setup, and the HubSpot → LinkedIn sync loop. |
+| [`abm-target-accounts`](skills/abm-target-accounts/SKILL.md) | Building or sizing a target account list — how many accounts a revenue target needs, lookalikes and ICP scoring (Clay, BuiltWith, Apollo), A–D tiers, HubSpot stage lists and automation, LinkedIn sync, and what a 90-day vs mature program looks like. |
 
 *More skills are being added — outbound & prospecting, paid media, attribution & analytics, sales process, messaging.*
 
