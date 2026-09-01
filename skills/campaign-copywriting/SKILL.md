@@ -3,9 +3,8 @@ name: campaign-copywriting
 description: "Use when writing or rewriting cold email campaign copy — subject lines, first lines, body, and the follow-up sequence — from a campaign strategy doc, a website, or client context, or when reviewing, scoring, or tightening an existing cold email. Also use when a draft has banned phrases, weak follow-up openers, or forced AI personalization."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: strategy
 ---

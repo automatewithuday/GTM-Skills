@@ -3,9 +3,8 @@ name: experiment-design
 description: "Use when planning a cold email test and the risk is changing list and copy at the same time and learning nothing. Covers list-only, copy-only, and combined experiments, sample size, and confidence weighting. Also use when someone asks \"did the new copy work\" and the experiment was never isolated."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: iterate-and-automate
 ---

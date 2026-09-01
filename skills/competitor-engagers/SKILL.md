@@ -3,9 +3,8 @@ name: competitor-engagers
 description: "Use when building a list of people who like or comment on competitors' LinkedIn posts, starting from a website URL. Also use when the ask is \"find people already engaging with vendors like us\" and the output needs ICP qualification before outreach."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: list-building
 ---

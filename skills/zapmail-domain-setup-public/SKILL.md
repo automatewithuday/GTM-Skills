@@ -3,9 +3,8 @@ name: zapmail-domain-setup-public
 description: "Use when setting up cold email infrastructure from zero: generating short domain names, checking availability and buying on Dynadot, switching nameservers, connecting domains on Zapmail, creating inboxes, and exporting them to Smartlead. Also use when planning the 2-week warmup timeline before a launch."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: infrastructure
 ---

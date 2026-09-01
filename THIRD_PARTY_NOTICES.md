@@ -1,11 +1,8 @@
 # Third-party notices
 
-Some skills in this library are adapted from
-[growthenginenowoslawski/coldoutboundskills](https://github.com/growthenginenowoslawski/coldoutboundskills)
-by GrowthEngineX, used under the MIT License. Those skills carry
-`metadata.source: growthenginenowoslawski/coldoutboundskills` in their `SKILL.md` frontmatter.
-Content is reproduced as published there, with frontmatter normalized to the Agent Skills spec
-and, where noted in commit history, long files split into `references/`.
+Portions of this library derive from
+[growthenginenowoslawski/coldoutboundskills](https://github.com/growthenginenowoslawski/coldoutboundskills),
+used under the MIT License reproduced below.
 
 ```
 MIT License

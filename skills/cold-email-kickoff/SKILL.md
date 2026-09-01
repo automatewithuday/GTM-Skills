@@ -3,9 +3,8 @@ name: cold-email-kickoff
 description: "Use when someone is starting cold email from scratch, says \"where do I begin\", or needs the guided entry point that walks through ICP, lead magnet, campaign strategy, and a plan before touching domains or lists. Also use when a new client or business needs onboarding into the cold email workflow."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: strategy
 ---

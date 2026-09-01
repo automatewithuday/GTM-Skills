@@ -4,9 +4,8 @@ description: "Use when targeting by technology installed on the prospect's websi
 license: MIT
 compatibility: Clay table builds run in the browser; workflow builds need the clay CLI.
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: signal-playbooks
 ---

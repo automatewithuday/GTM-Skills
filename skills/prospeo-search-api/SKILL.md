@@ -3,9 +3,8 @@ name: prospeo-search-api
 description: "Use when calling the Prospeo Search Person API directly and the exact request format, filter types, industry values, pagination, or rate limits are needed. Also use when a search is hitting the 25K cap or returning errors on filter syntax."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: list-building
 ---

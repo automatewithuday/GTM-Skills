@@ -3,9 +3,8 @@ name: spam-word-checker
 description: "Use when writing, reviewing, or QA-ing cold email copy for spam-trigger words, promotional pressure, fake urgency, and phishing-style phrasing that hurt deliverability. Runs on any draft during campaign-copywriting or as a standalone check before upload."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: copy-and-send
 ---

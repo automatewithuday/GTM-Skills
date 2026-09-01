@@ -4,7 +4,7 @@ Practical go-to-market playbooks — ABM, outbound, cold email operations, list 
 
 Each skill is a `SKILL.md` that follows the open [Agent Skills spec](https://agentskills.io): the agent reads the description to know *when* to use it, then loads the full playbook — formulas, benchmarks, worked examples, scripts, and a short "how to apply" workflow — only when the task calls for it.
 
-The ABM and signal skills are written from operator experience at [martechs.io](https://martechs.io). The cold email operations library is adapted from [coldoutboundskills](https://github.com/growthenginenowoslawski/coldoutboundskills) by GrowthEngineX (MIT) — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Numbers and benchmarks are kept as originally documented; treat them as a starting point, not gospel.
+Written and curated from operator experience running GTM systems at [martechs.io](https://martechs.io). Numbers and benchmarks are kept as documented; treat them as a starting point, not gospel.
 
 ## Install
 
@@ -166,4 +166,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: copy `template/SKILL.temp
 
 ## License
 
-[MIT](LICENSE) © 2026 Uday Kang / martechs.io. Skills adapted from coldoutboundskills remain © GrowthEngineX under MIT — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE) © 2026 Uday Kang / martechs.io. Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -3,9 +3,8 @@ name: google-maps-list-builder
 description: "Use when targeting local SMBs (restaurants, clinics, gyms, salons, contractors) by category and location and the list should come from Google Maps as a CSV ready for enrichment. Also use when a US-wide category search needs zip-code or city splitting."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: list-building
 ---

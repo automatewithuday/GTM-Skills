@@ -3,9 +3,8 @@ name: lead-magnet-brainstorm
 description: "Use when cold email copy needs a free offer or hook, when someone asks \"what can I give away\" or \"we need a stronger CTA\", or when the core offer is too direct for a cold first touch. Also use when choosing between audits, reports, templates, and trial-style front-end offers."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: strategy
 ---

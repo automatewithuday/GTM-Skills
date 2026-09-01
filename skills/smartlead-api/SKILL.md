@@ -3,9 +3,8 @@ name: smartlead-api
 description: "Use when any Smartlead operation needs to be done programmatically: campaigns, leads, email accounts, analytics, master inbox, webhooks. Endpoint reference, auth, rate limits, and TypeScript patterns shared by the other Smartlead skills."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: copy-and-send
 ---

@@ -4,9 +4,8 @@ description: "Use when the request is \"build me a list\", \"get me leads for X\
 license: MIT
 compatibility: Requires list-expander installed alongside (scripts import ../../list-expander/scripts/lib). Scripts need Node.js with tsx and API keys in .env (see .env.example at the repo root).
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: list-building
 ---

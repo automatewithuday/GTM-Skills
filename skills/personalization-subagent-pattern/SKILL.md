@@ -3,9 +3,8 @@ name: personalization-subagent-pattern
 description: "Use when a campaign needs per-lead custom variables (situation lines, value lines, CTAs) generated for hundreds of rows inside Claude Code using parallel sub-agents, with a human approval loop before scaling. Also use when personalization quality drifts across a large batch."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: iterate-and-automate
 ---

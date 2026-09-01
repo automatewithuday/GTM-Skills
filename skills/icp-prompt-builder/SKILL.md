@@ -3,9 +3,8 @@ name: icp-prompt-builder
 description: "Use when a list-building skill (disco-like, prospeo-full-export, blitz-list-builder, google-maps-list-builder) has just produced companies and the AI prompt that decides ICP fit needs to be built or tuned before spending on enrichment. Also use when a list came back with obvious bad fits."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: list-building
 ---

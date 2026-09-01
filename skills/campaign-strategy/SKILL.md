@@ -3,9 +3,8 @@ name: campaign-strategy
 description: "Use when planning cold outbound campaigns for a client or your own company — generating a slate of campaign ideas from broad to niche with list filters, AI-personalization strategies, and value propositions, given a website, ICP profile, or client context. Also use when deciding what data to source or enrich for outbound, or when a proposed campaign relies on data that isn't publicly available."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: strategy
 ---

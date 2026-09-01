@@ -4,9 +4,8 @@ description: "Use when launching a cold email campaign from a single target comp
 license: MIT
 compatibility: Scripts need Node.js with tsx and API keys in .env (see .env.example at the repo root).
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: iterate-and-automate
 ---

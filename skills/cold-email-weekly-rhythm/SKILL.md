@@ -3,9 +3,8 @@ name: cold-email-weekly-rhythm
 description: "Use when a cold email program is live and the question is what to do each Monday, Wednesday, Friday, biweekly, monthly, and quarterly to keep it healthy. Also use when reply rates are drifting and nobody is running deliverability checks, reply sweeps, or retrospectives on a schedule."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: iterate-and-automate
 ---

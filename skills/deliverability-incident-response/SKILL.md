@@ -3,9 +3,8 @@ name: deliverability-incident-response
 description: "Use when cold email deliverability breaks: \"I landed in spam\", bounce rate spiked, a domain is blacklisted, warmup got blocked, or reply rate fell off a cliff. Symptom-keyed triage for what to check first, likely cause, fix, and recovery timeline. Pair with email-deliverability-audit for a full diagnosis."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: infrastructure
 ---

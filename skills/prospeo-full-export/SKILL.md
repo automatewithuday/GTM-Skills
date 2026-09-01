@@ -3,9 +3,8 @@ name: prospeo-full-export
 description: "Use when exporting an entire Prospeo people search to CSV, including searches over the 25K result limit that need state-by-state splitting. Also use when someone built filters in Prospeo's UI and wants every matching contact out via the API."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: list-building
 ---

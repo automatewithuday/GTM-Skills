@@ -4,9 +4,8 @@ description: "Use when the offer is generic and each email needs one sentence na
 license: MIT
 compatibility: Clay table builds run in the browser; workflow builds need the clay CLI.
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: signal-playbooks
 ---

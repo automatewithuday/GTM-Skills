@@ -3,9 +3,8 @@ name: smartlead-spintax
 description: "Use when a cold email sequence needs Smartlead-compatible spintax ({option1|option2}) on subject lines, openers, CTAs, or transitions for deliverability, or when existing spintax may be producing broken sentences. Also use when someone asks to \"spin\" or add variations to copy."
 license: MIT
 metadata:
-  source: growthenginenowoslawski/coldoutboundskills
-  source-license: MIT
-  curator: automatewithuday
+  author: automatewithuday
+  source: martechs.io
   version: "1.0"
   category: copy-and-send
 ---
