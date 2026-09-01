@@ -1,0 +1,13 @@
+{
+  "name": "gtm-skills",
+  "description": "Practical GTM playbooks as agent skills: ABM measurement, outbound, paid media, attribution, and sales process — written from operator experience.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Uday Kang",
+    "url": "https://martechs.io"
+  },
+  "homepage": "https://github.com/automatewithuday/GTM-Skills",
+  "repository": "https://github.com/automatewithuday/GTM-Skills",
+  "license": "MIT",
+  "keywords": ["gtm", "abm", "sales", "marketing", "outbound", "revops"]
+}
