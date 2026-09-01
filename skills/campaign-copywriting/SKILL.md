@@ -343,9 +343,9 @@ Then **run `/smartlead-campaign-upload-public`** — it takes your `variants.yam
 
 ## Related skills
 
-These companion skills are referenced by name. If they are not installed in your workspace, do the equivalent step manually (spam-word check, Smartlead upload, list building).
+Companion skills are referenced by name. `campaign-strategy` is in this library; if the others are not installed in your workspace, do the equivalent step manually (spam-word check, Smartlead upload, list building).
 
-- `/campaign-strategy` — produces the campaign brief this skill writes copy for
+- [`campaign-strategy`](../campaign-strategy/SKILL.md) — produces the campaign brief this skill writes copy for (in this library)
 - `/icp-onboarding` — produces `client-profile.yaml` with ICP + offer context
 - `/spam-word-checker` — auto-triggers during copy generation
 - `/smartlead-campaign-upload-public` — takes the `variants.yaml` this skill produces and uploads to Smartlead
