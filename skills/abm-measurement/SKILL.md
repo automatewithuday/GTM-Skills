@@ -1,6 +1,6 @@
 ---
 name: abm-measurement
-description: Use when measuring, reporting on, or auditing an account-based marketing (ABM) program — choosing account-level metrics by funnel stage (coverage, awareness/reach, engagement, pipeline, revenue), picking an attribution model (linear multi-touch, W-shaped, hybrid), calculating ABM ROI, pipeline ROI, cost per engaged account, cost per pipeline account, pipeline velocity, ABM CAC or LTV:CAC, comparing results to benchmarks, or checking measurement maturity before launch. Also use when someone reports ABM results with lead or MQL metrics — that is the wrong model and this skill corrects it.
+description: Use when measuring, reporting on, or auditing an account-based marketing (ABM) program — choosing account-level metrics by funnel stage (coverage, awareness/reach, engagement, pipeline, revenue), picking an attribution model (weighted multi-touch, W-shaped, hybrid), calculating ABM ROI, pipeline ROI, cost per engaged account, cost per pipeline account, pipeline velocity, ABM CAC or LTV:CAC, comparing results to benchmarks, or checking measurement maturity before launch. Also use when someone reports ABM results with lead or MQL metrics — that is the wrong model and this skill corrects it.
 license: MIT
 metadata:
   author: automatewithuday
@@ -85,7 +85,7 @@ Closed-won revenue from ABM accounts. Feeds ABM ROI, ABM CAC, and LTV:CAC below.
 
 ## Attribution models
 
-### Account-level multi-touch (linear)
+### Account-level weighted multi-touch
 
 How it works:
 
@@ -93,7 +93,7 @@ How it works:
 2. Credit is distributed across all marketing touches before opportunity creation
 3. Sales activities tracked separately but contribute to velocity metrics
 
-Credit distribution example (linear):
+Credit distribution example (weighted multi-touch):
 
 ```
 Account: Acme Corp
