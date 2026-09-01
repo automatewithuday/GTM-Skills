@@ -51,6 +51,12 @@ Skills trigger automatically when your request matches their description, or inv
 |---|---|
 | [`closed-won-replication-play`](skills/closed-won-replication-play/SKILL.md) | A deal just closed won — find lookalike companies not yet in the CRM, draft outreach from the deal owner with an anonymized win reference, and queue one batch review task. Nothing sends without approval. |
 
+### Signals
+
+| Skill | Use when |
+|---|---|
+| [`champion-move-detection`](skills/champion-move-detection/SKILL.md) | Running a monthly sweep for customer champions and heavy users who changed jobs — live-LinkedIn verification with wrong-person and stale-headline guards, one MQL per move, churn flags on the account they left. Never sends. |
+
 *More skills are being added — paid media, attribution & analytics, sales process, messaging.*
 
 ## Using a skill well
