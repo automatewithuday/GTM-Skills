@@ -261,7 +261,7 @@ Once all decisions are confirmed, output the complete campaign.
 - [ ] No banned phrases
 - [ ] Word count 50-90 (or justified to 125 with strong AI)
 - [ ] CTA is low-effort
-- [ ] Em dashes are "—" not "--"
+- [ ] No em dashes (use periods or commas)
 ````
 
 ### Also emit a variants.yaml file (for upload)
