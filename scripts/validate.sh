@@ -24,7 +24,14 @@ for f in skills/*/SKILL.md; do
 
   fm=$(awk 'NR==1{next} /^---$/{exit} {print}' "$f")
   name=$(printf '%s\n' "$fm" | sed -n 's/^name:[[:space:]]*//p' | head -n 1)
-  desc=$(printf '%s\n' "$fm" | sed -n 's/^description:[[:space:]]*//p' | head -n 1)
+  rawdesc=$(printf '%s\n' "$fm" | sed -n 's/^description:[[:space:]]*//p' | head -n 1)
+  case "$rawdesc" in
+    \"*\") desc=$(printf '%s' "$rawdesc" | sed -e 's/^"//' -e 's/"$//' -e 's/\\"/"/g') ;;
+    *)
+      desc="$rawdesc"
+      # An unquoted YAML scalar cannot contain ': ' or ' #': real parsers reject the file and installers skip the skill.
+      case "$rawdesc" in *": "*|*" #"*) echo "FAIL $f: description must be double-quoted (contains ': ' or ' #')"; fail=1 ;; esac ;;
+  esac
 
   [ -n "$name" ] || { echo "FAIL $f: name is missing"; fail=1; }
   [ -n "$desc" ] || { echo "FAIL $f: description is missing (must be a single line)"; fail=1; }

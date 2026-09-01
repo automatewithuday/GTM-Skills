@@ -1,12 +1,13 @@
 ---
 name: campaign-copywriting
-description: Use when writing or rewriting cold email campaign copy — subject lines, first lines, body, and the follow-up sequence — from a campaign strategy doc, a website, or client context, or when reviewing, scoring, or tightening an existing cold email. Also use when a draft has banned phrases, weak follow-up openers, or forced AI personalization.
+description: "Use when writing or rewriting cold email campaign copy — subject lines, first lines, body, and the follow-up sequence — from a campaign strategy doc, a website, or client context, or when reviewing, scoring, or tightening an existing cold email. Also use when a draft has banned phrases, weak follow-up openers, or forced AI personalization."
 license: MIT
 metadata:
-  author: automatewithuday
-  source: martechs.io
+  source: growthenginenowoslawski/coldoutboundskills
+  source-license: MIT
+  curator: automatewithuday
   version: "1.0"
-  category: outbound
+  category: strategy
 ---
 
 # Campaign copywriting
@@ -272,7 +273,7 @@ After presenting the markdown-formatted copy above, ALSO write a machine-readabl
 profiles/<business-slug>/campaigns/<campaign-slug>/variants.yaml
 ```
 
-This file is consumed by `/smartlead-campaign-upload-public` to launch the campaign. Schema:
+This file is consumed by [`/smartlead-campaign-upload-public`](../smartlead-campaign-upload-public/SKILL.md) to launch the campaign. Schema:
 
 ```yaml
 name: "<campaign name>"
@@ -335,17 +336,16 @@ Now work stepwise with confidence.
 
 ## What to do next
 
-**Run `/spam-word-checker`** — it auto-triggers on any cold email draft. Make sure no banned phrases slipped in. Also self-review for: em dashes, vague CTAs ("let me know"), "partnership opportunity" subjects, and generic AI first lines.
+**Run [`/spam-word-checker`](../spam-word-checker/SKILL.md)** — it auto-triggers on any cold email draft. Make sure no banned phrases slipped in. Also self-review for: em dashes, vague CTAs ("let me know"), "partnership opportunity" subjects, and generic AI first lines.
 
-Then **run `/smartlead-campaign-upload-public`** — it takes your `variants.yaml` + a leads.csv and creates the campaign in Smartlead in DRAFT mode. You review in the Smartlead UI and hit Start manually.
+Then **run [`/smartlead-campaign-upload-public`](../smartlead-campaign-upload-public/SKILL.md)** — it takes your `variants.yaml` + a leads.csv and creates the campaign in Smartlead in DRAFT mode. You review in the Smartlead UI and hit Start manually.
 
-**Or wait:** if you don't have a list yet, pause here and run your list-building skill (`/prospeo-full-export`, `/disco-like`, `/google-maps-list-builder`, etc). Save the `variants.yaml` — it'll be waiting when you're ready.
+**Or wait:** if you don't have a list yet, pause here and run your list-building skill ([`/prospeo-full-export`](../prospeo-full-export/SKILL.md), [`/disco-like`](../disco-like/SKILL.md), [`/google-maps-list-builder`](../google-maps-list-builder/SKILL.md), etc). Save the `variants.yaml` — it'll be waiting when you're ready.
 
 ## Related skills
 
-Companion skills are referenced by name. `campaign-strategy` is in this library; if the others are not installed in your workspace, do the equivalent step manually (spam-word check, Smartlead upload, list building).
 
-- [`campaign-strategy`](../campaign-strategy/SKILL.md) — produces the campaign brief this skill writes copy for (in this library)
-- `/icp-onboarding` — produces `client-profile.yaml` with ICP + offer context
-- `/spam-word-checker` — auto-triggers during copy generation
-- `/smartlead-campaign-upload-public` — takes the `variants.yaml` this skill produces and uploads to Smartlead
+- [`campaign-strategy`](../campaign-strategy/SKILL.md) — produces the campaign brief this skill writes copy for
+- [`/icp-onboarding`](../icp-onboarding/SKILL.md) — produces `client-profile.yaml` with ICP + offer context
+- [`/spam-word-checker`](../spam-word-checker/SKILL.md) — auto-triggers during copy generation
+- [`/smartlead-campaign-upload-public`](../smartlead-campaign-upload-public/SKILL.md) — takes the `variants.yaml` this skill produces and uploads to Smartlead

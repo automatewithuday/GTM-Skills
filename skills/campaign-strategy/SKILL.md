@@ -1,14 +1,14 @@
 ---
 name: campaign-strategy
-description: Use when planning cold outbound campaigns for a client or your own company — generating a slate of campaign ideas from broad to niche with list filters, AI-personalization strategies, and value propositions, given a website, ICP profile, or client context. Also use when deciding what data to source or enrich for outbound, or when a proposed campaign relies on data that isn't publicly available.
+description: "Use when planning cold outbound campaigns for a client or your own company — generating a slate of campaign ideas from broad to niche with list filters, AI-personalization strategies, and value propositions, given a website, ICP profile, or client context. Also use when deciding what data to source or enrich for outbound, or when a proposed campaign relies on data that isn't publicly available."
 license: MIT
 metadata:
-  author: automatewithuday
-  source: martechs.io
+  source: growthenginenowoslawski/coldoutboundskills
+  source-license: MIT
+  curator: automatewithuday
   version: "1.0"
-  category: outbound
+  category: strategy
 ---
-
 
 # Campaign strategy
 
@@ -40,8 +40,8 @@ Every offer in the world helps people:
 
 You will receive one or more of:
 - A website URL (minimum required input)
-- A `client-profile.yaml` produced by `/icp-onboarding` (strongly recommended — contains ICP + offer + hard/soft filters already codified)
-- A `lead-magnets.md` from `/lead-magnet-brainstorm` (optional, but the chosen magnet shapes front-end offer suggestions)
+- A `client-profile.yaml` produced by [`/icp-onboarding`](../icp-onboarding/SKILL.md) (strongly recommended — contains ICP + offer + hard/soft filters already codified)
+- A `lead-magnets.md` from [`/lead-magnet-brainstorm`](../lead-magnet-brainstorm/SKILL.md) (optional, but the chosen magnet shapes front-end offer suggestions)
 - Target audience parameters (titles, company size, location, industries)
 - Onboarding form responses
 - Call transcript or account manager notes
@@ -407,21 +407,20 @@ Save the full strategy brief to:
 profiles/<business-slug>/campaign-strategy.md
 ```
 
-This is the handoff document for `/campaign-copywriting`. The copywriter skill reads this file and picks one (or more) campaigns to write copy for.
+This is the handoff document for [`/campaign-copywriting`](../campaign-copywriting/SKILL.md). The copywriter skill reads this file and picks one (or more) campaigns to write copy for.
 
 ## What to do next
 
-**Pick one campaign idea from the table above and run `/campaign-copywriting`** — it walks stepwise through copy direction → subject → body → final output, producing a `variants.yaml` ready for Smartlead upload.
+**Pick one campaign idea from the table above and run [`/campaign-copywriting`](../campaign-copywriting/SKILL.md)** — it walks stepwise through copy direction → subject → body → final output, producing a `variants.yaml` ready for Smartlead upload.
 
 Don't try to write copy for all 20 campaigns at once. Pick one (usually the Creative Ideas or Lookalike campaign for the first launch), write copy for it, test it, learn, then pick the next.
 
-**Or wait:** if you don't have inboxes + list yet, pause here. Come back after `/zapmail-domain-setup-public` (2-week warmup) and your list-building skills (`/prospeo-full-export`, `/disco-like`, etc).
+**Or wait:** if you don't have inboxes + list yet, pause here. Come back after [`/zapmail-domain-setup-public`](../zapmail-domain-setup-public/SKILL.md) (2-week warmup) and your list-building skills ([`/prospeo-full-export`](../prospeo-full-export/SKILL.md), [`/disco-like`](../disco-like/SKILL.md), etc).
 
 ## Related skills
 
-Companion skills are referenced by name. `campaign-copywriting` is in this library; if the others are not installed in your workspace, supply the equivalent inputs (ICP/offer context, lead magnet) manually.
 
-- `/icp-onboarding` — produces the `client-profile.yaml` this skill reads
-- `/lead-magnet-brainstorm` — picks the free offer this strategy builds around
-- [`campaign-copywriting`](../campaign-copywriting/SKILL.md) — writes the actual emails for campaigns defined here (in this library)
-- `/cold-email-kickoff` — the orchestrator that runs ICP + lead magnet + this skill in sequence
+- [`/icp-onboarding`](../icp-onboarding/SKILL.md) — produces the `client-profile.yaml` this skill reads
+- [`/lead-magnet-brainstorm`](../lead-magnet-brainstorm/SKILL.md) — picks the free offer this strategy builds around
+- [`campaign-copywriting`](../campaign-copywriting/SKILL.md) — writes the actual emails for campaigns defined here
+- [`/cold-email-kickoff`](../cold-email-kickoff/SKILL.md) — the orchestrator that runs ICP + lead magnet + this skill in sequence

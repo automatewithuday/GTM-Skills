@@ -11,7 +11,7 @@ Skills here follow the open [Agent Skills spec](https://agentskills.io/specifica
    ```
 2. Edit `skills/<skill-name>/SKILL.md`:
    - `name` must equal the directory name: lowercase letters, numbers, single hyphens, ≤64 chars.
-   - `description` is a single line starting with **"Use when …"**. Describe the *situations and keywords* that should trigger the skill — not what it contains. Agents read this to decide whether to load the skill; if it summarizes the content, they'll act on the summary and never read the body.
+   - `description` is a single line starting with **"Use when …"**, wrapped in double quotes if it contains `: ` or ` #` (YAML rejects those in bare scalars, and installers then skip the skill silently — the validator catches it). Describe the *situations and keywords* that should trigger the skill — not what it contains. Agents read this to decide whether to load the skill; if it summarizes the content, they'll act on the summary and never read the body.
    - Keep `SKILL.md` under 500 lines. Put heavy reference material in `references/` and link to it.
    - Keep the **How to apply this skill** section: inputs to gather → what to compute/assess → what to report. That's what turns a doc into a skill.
 3. Validate:
