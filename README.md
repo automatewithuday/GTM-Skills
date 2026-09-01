@@ -50,6 +50,7 @@ Skills trigger automatically when your request matches their description, or inv
 | Skill | Use when |
 |---|---|
 | [`closed-won-replication-play`](skills/closed-won-replication-play/SKILL.md) | A deal just closed won — find lookalike companies not yet in the CRM, draft outreach from the deal owner with an anonymized win reference, and queue one batch review task. Nothing sends without approval. |
+| [`campaign-copywriting`](skills/campaign-copywriting/SKILL.md) | Writing cold email campaigns — a 4-step confirm-then-write flow, hard rules, subject/first-line strategies, AI-personalization decision framework, follow-up templates, QA checklist and 0–100 scoring rubric. |
 
 ### Signals
 
