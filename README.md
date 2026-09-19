@@ -6,6 +6,8 @@ Each skill is a `SKILL.md` that follows the open [Agent Skills spec](https://age
 
 Written and curated from operator experience running GTM systems at [martechs.io](https://martechs.io). Numbers and benchmarks are kept as documented; treat them as a starting point, not gospel.
 
+Prefer to read before you install? Every skill has a full playbook page on the web: [GTM skills for Claude Code](https://martechs.io/gtm-skills).
+
 ## Install
 
 ```bash
