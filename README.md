@@ -82,6 +82,7 @@ The full cold outbound stack, in the order you'd run it. New to cold email? Star
 | [`smartlead-inbox-manager`](skills/smartlead-inbox-manager/SKILL.md) | warmup settings, signatures, active/insurance tagging |
 | [`email-deliverability-audit`](skills/email-deliverability-audit/SKILL.md) | diagnostic tool (SPF/DKIM/DMARC, spam placement, 1% rule) |
 | [`deliverability-incident-response`](skills/deliverability-incident-response/SKILL.md) | triage playbook for spam, bounces, blacklists, warmup blocks |
+| [`email-gateway-detection`](skills/email-gateway-detection/SKILL.md) | tag every domain with its secure email gateway (Proofpoint, Mimecast, Barracuda, Cisco) and mailbox provider, free via DNS first, then route campaigns per gateway |
 
 #### Track 3 — List building
 
@@ -156,7 +157,7 @@ cp .env.example .env        # fill in only the keys for the skills you use
 npx tsx skills/<skill>/scripts/<script>.ts --help
 ```
 
-`list-builder` imports shared helpers from `list-expander/scripts/lib.ts`, so install both. The minimum viable key set for a first campaign is **Dynadot + Zapmail + Prospeo + Smartlead**; every key and which skills need it is documented in [`.env.example`](.env.example).
+`email-gateway-detection` is Python instead: `pip install dnspython`, then `python skills/email-gateway-detection/scripts/detect_gateway.py --help`. `list-builder` imports shared helpers from `list-expander/scripts/lib.ts`, so install both. The minimum viable key set for a first campaign is **Dynadot + Zapmail + Prospeo + Smartlead**; every key and which skills need it is documented in [`.env.example`](.env.example).
 
 ## Using a skill well
 
