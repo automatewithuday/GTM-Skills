@@ -98,6 +98,7 @@ The full cold outbound stack, in the order you'd run it. New to cold email? Star
 | [`competitor-engagers`](skills/competitor-engagers/SKILL.md) | find people engaging with competitor LinkedIn posts |
 | [`icp-prompt-builder`](skills/icp-prompt-builder/SKILL.md) | required qualification step after every list-building skill |
 | [`list-quality-scorecard`](skills/list-quality-scorecard/SKILL.md) | grade a lead CSV across 8 dimensions before uploading |
+| [`buying-committee-mapper`](skills/buying-committee-mapper/SKILL.md) | map decision maker, champion, influencer, blocker per qualified account by headcount band; one person per slot, a copy brief per slot |
 
 #### Track 4 — Copy & send
 
