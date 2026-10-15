@@ -1,6 +1,6 @@
 ---
 name: buying-committee-mapper
-description: "Use when a qualified account list exists and more than one person per account must be contacted before any email goes out — anyone saying multithreading, buying committee, 'who should we contact at each account', title mapping, persona mapping, decision maker vs champion vs blocker, or 'which titles do we target'. Also use when reps are searching LinkedIn account by account to find who to email, since that is the list's job, not the rep's. Requires a list that has passed icp-prompt-builder."
+description: "Use when a qualified account list exists and more than one person per account must be contacted before any email goes out — anyone saying multithreading, buying committee, 'who should we contact at each account', title mapping, persona mapping, decision maker vs champion vs blocker, or 'which titles do we target'. Also use when reps are searching LinkedIn account by account to find who to email, since that is the list's job, not the rep's. Requires an account list that is already qualified, by icp-prompt-builder or any other method."
 license: MIT
 metadata:
   author: automatewithuday
@@ -41,7 +41,7 @@ One row per person. One person per slot per account.
 | copy_brief_id      | string  | `dm`, `ch`, `inf`, `blk`. Maps to the brief in committee-config.      |
 | champion_confirmed | bool    | Always `false` on output. Flipped to `true` only after a real reply.  |
 
-### 2. `committee-config.yaml` (appended to `client-profile.yaml`)
+### 2. `committee-config.yaml` (standalone, or appended to `client-profile.yaml` if you have one)
 
 ```yaml
 buying_committee:
@@ -97,16 +97,18 @@ That research should happen once, at the list level, before the account is assig
 ## Inputs required
 
 - Qualified account list CSV with at minimum: `domain, company_name, headcount`. Industry and description help the title interview.
-- `client-profile.yaml` from icp-onboarding (ICP, offer, hard filters, banned industries).
-- A data vendor the operator already has credits with: Prospeo (prospeo-search-api), Blitz (blitz-list-builder), or Clay (clay-playbooks).
+- Optional: `client-profile.yaml` from icp-onboarding (ICP, offer, hard filters, banned industries). Without it, the Step 2 interview collects the same facts.
+- People, from either source:
+  - A data vendor the operator already has credits with: Prospeo (prospeo-search-api), Blitz (blitz-list-builder), Clay (clay-playbooks), or any vendor that searches by title list plus domain list (Apollo, ZoomInfo, Sales Navigator).
+  - **Or an export you already have.** The tagger only needs `domain, full_name, title` per person; rename your vendor's columns to match and skip the pulls in Step 5.
 
-**Gate: do not run on an unqualified list.** If the list has not been through icp-prompt-builder or the user has not confirmed it is qualified, stop and route them there first. Mapping four people per account on a 60% wrong-fit list quadruples the waste.
+**Gate: do not run on an unqualified list.** Qualified means the list went through icp-prompt-builder, or the user confirms every account was checked against their ICP by some other method (hand review, CRM stage, a scoring model). If neither holds, stop and route them to icp-prompt-builder first. Mapping four people per account on a 60% wrong-fit list quadruples the waste.
 
 ## The loop (8 steps)
 
 ### Step 1: Load the qualified list and band it
 
-Read the CSV. Assign `headcount_band` to every row. Print the band distribution:
+Read the CSV and print the band distribution (the tagger in Step 6 assigns `headcount_band` itself from `headcount`, so this step is only for sizing the interview). `headcount` must be a number; a range like `51-200` is read as its low end, `5,000` as 5000.
 
 ```
 Band       Accounts   Share
@@ -131,7 +133,7 @@ Capture `owns`, `fears`, and `message_gets` for each slot. Then ask for `shared_
 
 ### Step 3: Build the title matrix by headcount band
 
-Now translate each slot into titles per band. Start from `references/slot-title-matrix.yaml` for the vertical closest to the user's, then adjust from the interview.
+Now translate each slot into titles per band. Start from `references/slot-title-matrix.yaml` for the vertical closest to the user's (sales tooling, developer and security tooling, marketing and demand gen), then adjust from the interview. That file holds three verticals under one `verticals:` key, so either pass it to the tagger with `--vertical=<key>` or copy one vertical's `slots` plus the `bands` into your own `committee-config.yaml` under `buying_committee:`. `scripts/fixtures/committee-config.yaml` is the sales tooling vertical already in that loadable shape.
 
 Rules the matrix must follow:
 
@@ -144,7 +146,7 @@ Show the full matrix back to the user. Get explicit approval before spending a c
 
 ### Step 4: Dry run on 10 accounts (approval loop)
 
-Pick 10 accounts across bands. For each, run the per-slot search (Step 5 logic) and present:
+Pick 10 accounts across bands. For each, run the per-slot search (Step 5 logic), or if you already have an export, run the tagger on just those 10 accounts' rows. Present:
 
 ```
 Domain          Band      Slot            Name          Title                     Rule   Conf
@@ -162,6 +164,8 @@ Same convergence rule as icp-prompt-builder: **2 consecutive rounds with zero co
 
 ### Step 5: Run enrichment per slot, not per account
 
+**Already have a people export for these accounts?** Skip this step. Rename columns to `domain, full_name, title` (plus `first_name, linkedin_url, email, email_status` if present) and go to Step 6. Map your vendor's verification labels onto `valid`, `catch_all`, `unknown`, `not_found`; any other label ranks lowest. Rows at domains not in the account list are dropped and counted in the report.
+
 Once locked, run the full list. The order and shape of the queries matters for cost:
 
 1. **One search per slot per band**, not one search per account. For Prospeo: `titles = matrix[slot][band]`, `domains = all accounts in that band`. That is at most 4 slots x 4 bands = 16 searches for the whole list.
@@ -174,7 +178,9 @@ For Blitz (SMB, owner-finding), it only fills the decision maker slot. Run it fo
 
 ### Step 6: Tag, dedupe, rank
 
-Run `scripts/tag-slots.ts` on the merged contact export. The contacts CSV needs `domain, full_name, title` and may carry `first_name, linkedin_url, email, email_status`; the accounts CSV needs `domain, company_name, headcount`.
+Run `scripts/tag-slots.ts` on the merged contact export. The contacts CSV needs `domain, full_name, title` and may carry `first_name, linkedin_url, email, email_status`; the accounts CSV needs `domain, company_name, headcount`. Domains are joined case-insensitively with scheme, `www.` and paths stripped, so a HubSpot `https://www.acme.com/` matches an Apollo `acme.com`.
+
+One-time setup: `npm i yaml` in your project root (the folder that contains `.claude/`, or any folder above the skill). The script resolves the package from its own location, not from your shell's working directory. `npx tsx` needs no global install.
 
 ```
 npx tsx scripts/tag-slots.ts \
@@ -217,7 +223,7 @@ same_claim: {shared_claim}
 
 Decision maker gets cost and risk. Champion gets what they will be able to say internally. Influencer gets the daily pain. Blocker gets what you will not touch. All four carry the same `shared_claim` so the group can agree on what it is buying.
 
-Hand off to campaign-copywriting with `slot` as a custom field. It writes four variants, one per slot, not one email with four tweaks. Then smartlead-campaign-upload-public maps `slot` and `copy_brief_id` as custom fields.
+Hand off to campaign-copywriting (or whatever writes your copy) with `slot` as a custom field. It writes four variants, one per slot, not one email with four tweaks. Then smartlead-campaign-upload-public (or your sequencer's lead import) maps `slot` and `copy_brief_id` as custom fields.
 
 Sequencing rules to pass along:
 
@@ -286,9 +292,9 @@ From an MCP-adopter list run in October 2026 (security and developer-tool vendor
 
 ## Scripts and references
 
-- `scripts/tag-slots.ts`: assigns slots from the matrix, dedupes, ranks, writes the map and the coverage report. Requires `npm i yaml` (CSV is handled in-script). Run `npx tsx scripts/tag-slots.ts --help`.
+- `scripts/tag-slots.ts`: assigns slots from the matrix, dedupes, ranks, writes the map and the coverage report. Requires `npm i yaml` in your project root (CSV is handled in-script, no API keys). Accepts `--vertical=<key>` when the matrix file is `references/slot-title-matrix.yaml`. Run `npx tsx scripts/tag-slots.ts --help`.
 - `scripts/fixtures/`: a 5-account, 13-contact sample (one blank headcount, one collapse, one negative-title hit). Smoke test: `npx tsx scripts/tag-slots.ts --contacts=scripts/fixtures/contacts.csv --matrix=scripts/fixtures/committee-config.yaml --accounts=scripts/fixtures/accounts.csv --out=/tmp/map.csv --report=/tmp/report.md` should write 9 rows.
-- `references/slot-title-matrix.yaml`: starting matrices for three verticals (sales tooling, developer and security tooling, marketing and demand gen). Copy the closest one into `committee-config.yaml` and edit from the interview.
+- `references/slot-title-matrix.yaml`: starting matrices for three verticals (`sales_tooling`, `developer_and_security_tooling`, `marketing_and_demand_gen`). Load directly with `--vertical=<key>` for the dry run, then copy the closest one into `committee-config.yaml` and edit from the interview.
 
 ## Recommended flow
 
@@ -306,7 +312,7 @@ From an MCP-adopter list run in October 2026 (security and developer-tool vendor
 
 ## Related skills
 
-- icp-prompt-builder: run FIRST. This skill refuses unqualified lists.
+- icp-prompt-builder: run FIRST unless the list is already qualified another way. This skill refuses unqualified lists.
 - icp-onboarding: produces the `client-profile.yaml` this skill appends to.
 - prospeo-search-api, blitz-list-builder, clay-playbooks: the per-slot pulls.
 - list-quality-scorecard: grades `committee-map.csv` before upload.

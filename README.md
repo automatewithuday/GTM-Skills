@@ -158,7 +158,7 @@ cp .env.example .env        # fill in only the keys for the skills you use
 npx tsx skills/<skill>/scripts/<script>.ts --help
 ```
 
-`email-gateway-detection` is Python instead: `pip install dnspython`, then `python skills/email-gateway-detection/scripts/detect_gateway.py --help`. `list-builder` imports shared helpers from `list-expander/scripts/lib.ts`, so install both. The minimum viable key set for a first campaign is **Dynadot + Zapmail + Prospeo + Smartlead**; every key and which skills need it is documented in [`.env.example`](.env.example).
+`email-gateway-detection` is Python instead: `pip install dnspython`, then `python skills/email-gateway-detection/scripts/detect_gateway.py --help`. `buying-committee-mapper` needs no API keys, only `npm i yaml` in the repo root. `list-builder` imports shared helpers from `list-expander/scripts/lib.ts`, so install both. The minimum viable key set for a first campaign is **Dynadot + Zapmail + Prospeo + Smartlead**; every key and which skills need it is documented in [`.env.example`](.env.example).
 
 ## Using a skill well
 

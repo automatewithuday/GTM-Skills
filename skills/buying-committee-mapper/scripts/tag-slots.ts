@@ -30,9 +30,14 @@ const args = Object.fromEntries(
 );
 
 if ("help" in args || !args.contacts || !args.matrix || !args.accounts) {
-  console.error(
-    "usage: npx tsx scripts/tag-slots.ts --contacts=F --matrix=F --accounts=F [--out=committee-map.csv] [--report=coverage-report.md]",
-  );
+  console.error(`usage: npx tsx scripts/tag-slots.ts --contacts=F --matrix=F --accounts=F [--out=committee-map.csv] [--report=coverage-report.md] [--vertical=NAME]
+
+  contacts CSV  domain, full_name, title  [+ first_name, linkedin_url, email, email_status]  (any vendor export works)
+  accounts CSV  domain, company_name, headcount
+  matrix YAML   a buying_committee: block, or references/slot-title-matrix.yaml with --vertical=<key> to pick one
+  headcount     a number; a range like "51-200" is read as its low end
+  Domains are joined case-insensitively; scheme, www. and paths are stripped on both sides.
+  Needs the yaml package: run \`npm i yaml\` in your project root (any folder above this script).`);
   process.exit("help" in args ? 0 : 1);
 }
 const OUT = args.out || "committee-map.csv";
@@ -94,11 +99,17 @@ async function loadMatrix(path: string): Promise<Matrix> {
   try {
     YAML = await import("yaml");
   } catch {
-    console.error("Missing dependency: run `npm i yaml` and retry.");
+    console.error("Missing dependency `yaml`: run `npm i yaml` in your project root (any folder above this script) and retry.");
     process.exit(1);
   }
   const doc = YAML.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-  const m = (doc.buying_committee ?? doc) as Matrix;
+  let m = (doc.buying_committee ?? doc) as Matrix;
+  const verticals = doc.verticals as Record<string, { slots: Matrix["slots"] }> | undefined;
+  if (verticals) {
+    const v = verticals[args.vertical ?? ""];
+    if (!v) { console.error(`${path} has verticals; pass --vertical=<${Object.keys(verticals).join("|")}>`); process.exit(1); }
+    m = { bands: m.bands, slots: v.slots };
+  }
   if (!m.bands || !m.slots) {
     console.error(`${path}: expected a buying_committee block with bands and slots`);
     process.exit(1);
@@ -108,12 +119,13 @@ async function loadMatrix(path: string): Promise<Matrix> {
 
 const DEFAULT_BAND = "51-200";
 function bandFor(headcount: string, bands: Matrix["bands"]): { band: string; blank: boolean } {
-  const n = parseInt(headcount.replace(/[^0-9]/g, ""), 10);
+  const n = parseInt(headcount.replace(/,/g, "").match(/\d+/)?.[0] ?? "", 10); // "51-200" -> 51, "5,000" -> 5000
   if (!n) return { band: DEFAULT_BAND, blank: true };
   const b = bands.find((x) => n >= x.min && (x.max === null || n <= x.max));
   return { band: b ? b.id : DEFAULT_BAND, blank: !b };
 }
 
+const domainKey = (d: string) => d.toLowerCase().trim().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9&+ ]+/g, " ").replace(/\s+/g, " ").trim();
 const rx = (p: string) => new RegExp(`(^|[^a-z0-9])${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`, "i");
 
@@ -147,15 +159,16 @@ async function main() {
   const matrix = await loadMatrix(args.matrix);
   const accounts = parseCsv(readFileSync(args.accounts, "utf8"));
   const contacts = parseCsv(readFileSync(args.contacts, "utf8"));
-  const acct = new Map(accounts.map((a) => [a.domain.toLowerCase(), a]));
+  const acct = new Map(accounts.map((a) => [domainKey(a.domain ?? ""), a]));
 
   const unmatched = new Map<string, number>();
+  let skipped = 0;
   let blankHeadcount = 0;
   const tagged: Record<string, unknown>[] = [];
 
   for (const c of contacts) {
-    const a = acct.get((c.domain ?? "").toLowerCase());
-    if (!a) continue; // not a qualified account
+    const a = acct.get(domainKey(c.domain ?? ""));
+    if (!a) { skipped++; continue; } // not a qualified account
     const { band, blank } = bandFor(a.headcount ?? "", matrix.bands);
     const m = matchSlot(c.title ?? "", band, matrix.slots);
     if (!m) {
@@ -194,7 +207,7 @@ async function main() {
   const byDomain = new Map<string, Record<string, unknown>[]>();
   for (const r of out) (byDomain.get(r.domain as string) ?? byDomain.set(r.domain as string, []).get(r.domain as string)!).push(r);
   for (const [domain, rows] of byDomain) {
-    const hc = parseInt((rows[0].headcount as string).replace(/[^0-9]/g, ""), 10);
+    const hc = parseInt((rows[0].headcount as string).replace(/,/g, "").match(/\d+/)?.[0] ?? "", 10);
     const hasBlocker = rows.some((r) => r.slot === "blocker");
     const dm = rows.find((r) => r.slot === "decision_maker" && r.slot_rank === 1);
     if (hc && hc < collapseBelow && !hasBlocker && dm) {
@@ -225,7 +238,7 @@ async function main() {
   const report = [
     `# Coverage report`,
     ``,
-    `Accounts: ${nAcc}. Contacts in: ${contacts.length}. Rows out: ${out.length}.`,
+    `Accounts: ${nAcc}. Contacts in: ${contacts.length}. Skipped (domain not in accounts CSV): ${skipped}. Rows out: ${out.length}.`,
     ``,
     `## Per-slot fill (accounts with at least one person)`,
     ``,
