@@ -98,6 +98,7 @@ The full cold outbound stack, in the order you'd run it. New to cold email? Star
 | [`competitor-engagers`](skills/competitor-engagers/SKILL.md) | find people engaging with competitor LinkedIn posts |
 | [`icp-prompt-builder`](skills/icp-prompt-builder/SKILL.md) | required qualification step after every list-building skill |
 | [`list-quality-scorecard`](skills/list-quality-scorecard/SKILL.md) | grade a lead CSV across 8 dimensions before uploading |
+| [`buying-committee-mapper`](skills/buying-committee-mapper/SKILL.md) | map decision maker, champion, influencer, blocker per qualified account by headcount band; one person per slot, a copy brief per slot |
 
 #### Track 4 — Copy & send
 
@@ -157,7 +158,7 @@ cp .env.example .env        # fill in only the keys for the skills you use
 npx tsx skills/<skill>/scripts/<script>.ts --help
 ```
 
-`email-gateway-detection` is Python instead: `pip install dnspython`, then `python skills/email-gateway-detection/scripts/detect_gateway.py --help`. `list-builder` imports shared helpers from `list-expander/scripts/lib.ts`, so install both. The minimum viable key set for a first campaign is **Dynadot + Zapmail + Prospeo + Smartlead**; every key and which skills need it is documented in [`.env.example`](.env.example).
+`email-gateway-detection` is Python instead: `pip install dnspython`, then `python skills/email-gateway-detection/scripts/detect_gateway.py --help`. `buying-committee-mapper` needs no API keys, only `npm i yaml` in the repo root. `list-builder` imports shared helpers from `list-expander/scripts/lib.ts`, so install both. The minimum viable key set for a first campaign is **Dynadot + Zapmail + Prospeo + Smartlead**; every key and which skills need it is documented in [`.env.example`](.env.example).
 
 ## Using a skill well
 
