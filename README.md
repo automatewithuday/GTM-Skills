@@ -94,6 +94,7 @@ The full cold outbound stack, in the order you'd run it. New to cold email? Star
 | [`prospeo-search-api`](skills/prospeo-search-api/SKILL.md) | Prospeo filter and API reference |
 | [`blitz-list-builder`](skills/blitz-list-builder/SKILL.md) | domain-first contact discovery |
 | [`google-maps-list-builder`](skills/google-maps-list-builder/SKILL.md) | scrape Google Maps for local SMB lists |
+| [`email-waterfall`](skills/email-waterfall/SKILL.md) | fill missing emails provider by provider (GetLeads → LeadMagic → Prospeo → FullEnrich), verify, stop at the first verified hit; never guesses patterns |
 | [`disco-like`](skills/disco-like/SKILL.md) | lookalike company discovery (seed domains or ICP text) |
 | [`competitor-engagers`](skills/competitor-engagers/SKILL.md) | find people engaging with competitor LinkedIn posts |
 | [`icp-prompt-builder`](skills/icp-prompt-builder/SKILL.md) | required qualification step after every list-building skill |
