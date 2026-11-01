@@ -9,7 +9,7 @@ metadata:
   category: infrastructure
 ---
 
-# Cold Email Domain Setup: Dynadot + Zapmail (Public Edition)
+# Cold Email Domain Setup (Dynadot + Zapmail, Public Edition)
 
 Complete workflow to generate short domain names, purchase them on Dynadot, and set them up on Zapmail with inboxes ready for cold email sending.
 

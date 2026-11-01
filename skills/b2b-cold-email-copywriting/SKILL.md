@@ -11,7 +11,7 @@ metadata:
 
 # B2B cold email copywriting
 
-A complete operating system for writing cold email that gets replies instead of spam flags. This is the exact framework we run at B2B Boosted across millions of sends. It assumes you already know that copy is only one of three levers, and it will not let you skip the other two.
+A complete operating system for writing cold email that gets replies instead of spam flags. This is the framework we run on client campaigns at B2B Boosted. It assumes you already know that copy is only one of three levers, and it will not let you skip the other two.
 
 ## 0. The Big 3 (get the order right or nothing else matters)
 
@@ -207,7 +207,7 @@ Remove or rephrase on sight:
 
 ## Notes / results
 
-Built and refined across B2B Boosted client campaigns and my own client-acquisition lane over millions of sends. The give-first + single low-friction CTA structure consistently beats feature-led "book a call" copy on positive reply rate. Everything here is battle-tested against real inboxes, not theory. Pair it with a clean list and warm inboxes and the copy does the rest.
+Built and refined across B2B Boosted client campaigns and my own client-acquisition lane. The give-first + single low-friction CTA structure consistently beats feature-led "book a call" copy on positive reply rate. Everything here is battle-tested against real inboxes, not theory. Pair it with a clean list and warm inboxes and the copy does the rest.
 
 ## Related skills
 

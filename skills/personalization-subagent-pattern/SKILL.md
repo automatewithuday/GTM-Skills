@@ -9,7 +9,7 @@ metadata:
   category: iterate-and-automate
 ---
 
-# Personalization Sub-Agent Pattern
+# Personalization Sub-Agent
 
 Cold email personalization at scale requires per-lead generation. Claude Code's Task tool lets you fan out to many sub-agents in parallel, each personalizing a slice of the lead list. This skill defines the reusable approval-loop pattern.
 

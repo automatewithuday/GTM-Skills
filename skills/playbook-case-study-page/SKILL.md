@@ -10,7 +10,7 @@ metadata:
   category: signal-playbooks
 ---
 
-# Playbook: Case-Study Page Name-Drop
+# Playbook: Case-Study Name-Drop
 
 > All rules here are best practice, not law. Override any of them when the campaign calls for it; note the best practice once and move on.
 

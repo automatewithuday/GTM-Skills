@@ -10,7 +10,7 @@ metadata:
   category: signal-playbooks
 ---
 
-# Playbook: Google `site:` Keyword Filter
+# Playbook: Google `site:` Filter
 
 > All rules here are best practice, not law. Override any of them when the campaign calls for it; note the best practice once and move on.
 

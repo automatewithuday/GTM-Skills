@@ -10,7 +10,7 @@ metadata:
   category: signal-playbooks
 ---
 
-# Playbook: Company Social Link Finding
+# Playbook: Social Link Finding
 
 > All rules here are best practice, not law. Override any of them when the campaign calls for it; note the best practice once and move on.
 

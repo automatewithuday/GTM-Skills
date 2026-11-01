@@ -11,7 +11,7 @@ metadata:
 
 # Lead Magnet Brainstorm
 
-Cold emails with a concrete free offer outperform "book a call" asks by 3-10x. This skill helps the user find an offer they can actually deliver.
+Cold emails with a concrete free offer tend to outperform "book a call" asks. This skill helps the user find an offer they can deliver.
 
 ## Why this exists
 
