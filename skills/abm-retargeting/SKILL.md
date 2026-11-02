@@ -1,6 +1,6 @@
 ---
 name: abm-retargeting
-description: "Use when planning, building, or troubleshooting retargeting and engagement follow-up for ABM target accounts — reading ad engagement back from LinkedIn at account and contact level, moving accounts to Aware or Interested, routing interested accounts to email and LinkedIn outreach lanes, alerting account owners, segmenting audiences by engagement level or page visited, setting ad frequency caps and creative rotation, sequencing a multi-channel play after a trigger, setting up website or matched audiences in LinkedIn, Meta, or Google, syncing a database of accounts to ad audiences, or weighting multi-touch attribution for retargeting. Also use when someone treats ABM retargeting like generic display retargeting, mentions the ad or the visit in the first email, or is seeing ad fatigue on target accounts."
+description: "Use when planning, building, or troubleshooting retargeting or engagement follow-up for ABM target accounts — reading LinkedIn ad engagement back at account and contact level, moving accounts between ABM stages, routing accounts to outreach lanes or owner alerts, setting ad frequency and creative rotation, sequencing a multi-channel play, setting up matched or website audiences on LinkedIn, Meta, or Google, syncing an account database to ad audiences, or weighting multi-touch attribution for retargeting. Also use when someone treats ABM retargeting like generic display retargeting, scrapes the Ad Library for their own ads, mentions the ad or the visit in the first email, or is seeing ad fatigue on target accounts."
 license: MIT
 metadata:
   author: automatewithuday
@@ -30,7 +30,7 @@ When asked to plan, build, or fix ABM retargeting:
 
 1. Gather inputs (ask for what's missing):
    - The `abm_accounts` rows for the campaign (stage, tier, 30-day counts) and the contacts table
-   - The company's domain (to list its live ads) and the Campaign Manager company engagement report
+   - The LinkedIn ad account ID (to list your own sponsored creatives) and the weekly CSV export of the Campaign Manager company engagement report (the Companies tab)
    - Which site pages are tagged (LinkedIn Insight Tag, Meta Pixel, Google Tag) and which pages matter (pricing, demo, case studies, blog)
    - Channels available: LinkedIn, Meta, Google, email (Smartlead or equivalent), LinkedIn outreach (HeyReach or equivalent), BDR, direct mail, Slack
    - Current frequency and number of active creatives
@@ -45,23 +45,42 @@ Do not run one ad on repeat, lean on platform lookalike audiences, prospect on M
 Job: the table knows who warmed up, at company and contact level, from the same rows.
 
 ```
-1. List every live ad for your domain with the post link behind it
-   → Adyntel through the tool layer (or the Apify LinkedIn Ads scraper)
-2. Scrape the reactions and comments on each post
-   → HarvestAPI post engagement
-3. Match each engaging person to an account (domain, then LinkedIn company)
-   → write one row per person per post to abm_engagements
+1. List your own sponsored creatives with the post behind each one
+   → LinkedIn creatives listing through the tool layer (on your own ad account credentials)
+   → returns post_url and post_urn per creative, dark posts included
+   → Ad Library scrapers (Adyntel, Apify) return an Ad Library detail link, not the post:
+     use them for competitor ads only
+2. Pull the reactions and the comments on each post (two calls per post)
+   → HarvestAPI post reactions, HarvestAPI post comments
+   → each engager comes back as name, profile URL, headline; no structured company
+3. Resolve each engager to an account
+   → person enrichment on the profile URL → current company domain
+   → write one row per person per post to abm_engagements; unmatched rows keep domain null
 4. Roll engagements up to the company → engagements_30d, engaged_people_7d on abm_accounts
-5. Impressions and clicks per account still come from the Campaign Manager
-   company engagement report, read in weekly → impressions_30d, clicks_30d
+5. Impressions and clicks per account come from the Campaign Manager company
+   engagement report (Companies tab), exported as CSV once a week
+   → no provider reads it today; the weekly job starts from that file
+   → the report keys on company name and LinkedIn company URL: map to domain before writing
+   → impressions_30d, clicks_30d (LinkedIn only, by design; Meta and Google do not count toward Aware)
 ```
 
 ```sql
 create table abm_engagements (
-  person_linkedin text, domain text, campaign text,
-  post_url text, kind text,        -- reaction | comment
+  person_linkedin text, person_name text, person_headline text,
+  domain text,                     -- null until resolved
+  campaign text, post_urn text,
+  kind text,                       -- reaction | comment
   observed_at date
 );
+
+-- weekly roll-up
+update abm_accounts a set
+  engagements_30d   = (select count(*) from abm_engagements e
+                       where e.domain = a.domain and e.campaign = a.campaign
+                         and e.observed_at >= current_date - 30),
+  engaged_people_7d = (select count(distinct person_linkedin) from abm_engagements e
+                       where e.domain = a.domain and e.campaign = a.campaign
+                         and e.observed_at >= current_date - 7);
 ```
 
 Why: the contact view and the company view come from the same rows, so the number sales sees on the account is the sum of people they can name.
@@ -73,6 +92,7 @@ Stage moves (from `abm-target-accounts`): 50 impressions moves an account to Awa
 | Condition | Lane |
 |---|---|
 | Interested AND a known person engaged | Email sequence (Smartlead) and LinkedIn sequence (HeyReach), pushed through the tool layer, from the name whose ads they saw |
+| Interested on clicks alone, no named engager | Same sequences, to the buying-committee contacts from `abm-target-accounts` step 4 |
 | 3 or more engaged people at one account in a week | Slack alert to the account owner the same day |
 | Interested, no response by day 21 | Drop to Warm, reduce frequency, change the angle |
 | Executive at a high-value account | Direct mail and InMail on top of the lanes |
@@ -137,7 +157,7 @@ COOL audiences (46-90 days):
 
 ## Multi-channel orchestration: trigger play
 
-The trigger is a stage move to Interested, a pricing-page visit by a known account, or a job-change signal. The play is the same.
+The trigger is a stage move to Interested or a job-change signal, read from the table. A pricing-page visit is a platform-side audience only (the ad platform matches the visitor); it never lands in the table, because the skills do not de-anonymize traffic.
 
 ```
 Day 0:  Trigger lands in the table
@@ -201,7 +221,7 @@ Weight adjustments:
 1. Install Meta Pixel on ABM landing pages
 2. Push hashed contact lists through the tool layer (mode replace for full snapshots)
 3. Create Custom Audience from website traffic
-4. Delivery status 411 = the list matched poorly; fix the contact list, not the creative
+4. Status code 411 = a low rate of matched people; fix the contact list, not the creative
 5. Use Lookalike audiences sparingly (dilutes ABM precision)
 6. Focus on retargeting, not prospecting on Meta
 ```
@@ -226,8 +246,8 @@ LinkedIn company audiences per tier (replace) · Meta + Google hashed contact li
 Campaign Manager targets the audience
   ↓
 Engagement comes back two ways:
-  · Campaign Manager company engagement report → impressions_30d, clicks_30d
-  · Live ads (Adyntel/Apify) → post links → HarvestAPI reactions and comments → abm_engagements → engagements_30d
+  · Campaign Manager company engagement report, weekly CSV, mapped to domain → impressions_30d, clicks_30d
+  · Your creatives → post_url → HarvestAPI reactions + comments → person enrichment → abm_engagements → engagements_30d
   ↓
 Stage rules run → stage changes in the table → lanes fire
   ↓
@@ -240,9 +260,9 @@ Next weekly push rebuilds every platform list from the table
 
 | Decision | Rule |
 |---|---|
-| Engagement sources | Impressions/clicks: Campaign Manager company report weekly · Engagements: live ads → post links → reactions and comments, matched to accounts |
+| Engagement sources | Impressions/clicks: Campaign Manager company report, weekly CSV, mapped to domain · Engagements: your creatives → post_url → reactions + comments → person enrichment → account |
 | Stage moves | ≥50 impressions → Aware · ≥5 clicks or ≥10 engagements → Interested |
-| Outreach lane | Interested + known person engaged → email and LinkedIn sequences through the tool layer; email leads with the problem, never the ad |
+| Outreach lane | Interested + known person engaged → sequences to that person · Interested on clicks alone → sequences to the buying committee; email leads with the problem, never the ad |
 | Alert | 3+ engaged people at one account in a week → Slack to the owner same day |
 | Content by engagement | 1–2 touches: awareness · 3–5: solution · 6–10: conversion · 10+: BDR outreach + direct offers |
 | Frequency cap | ~4 impressions / person / week; bottom-of-funnel up to ~15 per 30 days |
@@ -253,17 +273,19 @@ Next weekly push rebuilds every platform list from the table
 | Play exit | Day 21 with no response → move to Warm, reduce frequency, change angle |
 | Attribution split | First 20% · Last 20% · Linear 60%; BDR meeting 2x, download 1.5x, click 1x, impression 0.5x, email open 0.25x |
 | LinkedIn audience logic | Website visitors AND company list · sync replaces · 300 members to serve · ~48h |
-| Meta | Replace mode for snapshots · status 411 = poor match |
+| Meta | Replace mode for snapshots · status code 411 = low match rate |
 
 ## Common mistakes
 
 - Mentioning the ad, the post, or the visit in the first email — lead with the problem the signals add up to.
 - Reading engagement at company level only — scrape the post engagers so the company number is the sum of named people.
-- Waiting on a connector product for company-level engagement — the Campaign Manager report read weekly is enough.
+- Scraping the Ad Library for your own ads — Ad Library tools return a detail link, not the post. Your creatives listing has the post URL.
+- Writing the company report straight into the table — it keys on LinkedIn company, map it to domain first.
 - Running one ad on repeat — frequency without rotation is fatigue. Keep 3–4 variants live for hot audiences.
 - Retargeting anonymous traffic — always intersect website visitors with the company list so only known accounts see ads.
 - Appending to a LinkedIn audience — every sync replaces it; rebuild the full list from the table each week.
 - Blaming the creative for a Meta 411 — it is the contact list that matched poorly.
+- Triggering a play from a website visit in the table — visits exist only as platform audiences.
 - Using lookalike audiences — they dilute ABM precision. Use sparingly or not at all.
 - Prospecting on Meta — Meta is for retargeting in ABM, not net-new.
 - Leaning on Google remarketing — B2B match rates are low; use it as a supplement to LinkedIn, not the core.

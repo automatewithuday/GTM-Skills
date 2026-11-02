@@ -44,7 +44,7 @@ Skills trigger automatically when your request matches their description, or inv
 | Skill | Use when |
 |---|---|
 | [`abm-measurement`](skills/abm-measurement/SKILL.md) | Measuring, reporting on, or auditing an ABM program — accounts per stage from the account table, stage metrics, attribution models, ROI/CAC/velocity formulas, benchmarks, closed-won feedback loop, and a measurement-maturity check. |
-| [`abm-retargeting`](skills/abm-retargeting/SKILL.md) | Planning or fixing retargeting for ABM accounts — reading LinkedIn engagement back at account and contact level, outreach lanes and owner alerts, frequency caps and creative rotation, a day-by-day multi-channel play, LinkedIn/Meta/Google audience setup, and the database → ad platform → database loop. |
+| [`abm-retargeting`](skills/abm-retargeting/SKILL.md) | Planning or fixing retargeting for ABM accounts — reading LinkedIn engagement back from your own creatives at account and contact level, outreach lanes and owner alerts, frequency caps and creative rotation, a day-by-day multi-channel play, LinkedIn/Meta/Google audience setup, and the database → ad platform → database loop. |
 | [`abm-target-accounts`](skills/abm-target-accounts/SKILL.md) | Building or sizing a target account list — how many accounts a revenue target needs, TAM from closed-won lookalike filters, fit and timing scored separately, A–D tiers with a budget split, buying committee and audience pushes via any provider, stage state in any SQL database, and what a 90-day vs mature program looks like. |
 
 ### Signals

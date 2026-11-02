@@ -21,7 +21,7 @@ ABM measurement is fundamentally different from demand gen measurement. You're t
 
 If you're measuring ABM with lead metrics, you're doing it wrong.
 
-**Stack this skill assumes:** the `abm_accounts` table from `abm-target-accounts` (any SQL database) holds stage, tier, and the 30-day engagement counts per account per campaign, and `abm-retargeting` keeps them current. Every stage count below is one query on that table. If sales reports out of the CRM, the same counts come from active lists built on the written-back stage property; the numbers must match the table.
+**Stack this skill assumes:** the `abm_accounts` table from `abm-target-accounts` (any SQL database) holds stage, tier, and the 30-day engagement counts per account per campaign, and `abm-retargeting` keeps them current. Every stage count below is one query on that table. Stages are cumulative (an account never moves backwards), so the rates below count accounts at or beyond a stage; the rolling 30-day columns drive lanes, not reports. If sales reports out of the CRM, the same counts come from active lists built on the written-back stage property; the numbers must match the table.
 
 ## How to apply this skill
 
@@ -73,6 +73,8 @@ Example:
 850 / 1500 = 56.7%
 ```
 
+On the table: `stage in ('aware','interested','considering','selecting')` / all rows in the campaign.
+
 ### Engagement
 
 An account is engaged when it has 5+ clicks OR 10+ engagements.
@@ -84,6 +86,8 @@ Example:
 272 / 850 = 32%
 ```
 
+On the table: `stage in ('interested','considering','selecting')` / `stage in ('aware','interested','considering','selecting')`.
+
 Benchmark — Awareness to Engagement: 30% of aware accounts become engaged.
 
 ### Pipeline
@@ -94,6 +98,8 @@ Influence Rate = Pipeline Influenced / Total Pipeline
 ```
 
 Benchmark — Engagement to Pipeline: 20% (accounts that book demo/trial).
+
+On the table: accounts in pipeline = `stage = 'selecting'` (an open deal); `considering` is the demo/trial step before it.
 
 ### Revenue
 
@@ -256,7 +262,7 @@ Gaps:
 
 What you can measure:
 
-- Account-level engagement (Campaign Manager company engagement report read in weekly, plus post engagers scraped and matched to accounts, both in the account table)
+- Account-level engagement (Campaign Manager company engagement report exported weekly as CSV, plus post engagers resolved to accounts, both in the account table)
 - Stage progression
 - Pipeline influenced by ABM
 - Basic attribution
@@ -306,9 +312,9 @@ Focus on leading indicators (the coverage, awareness, and engagement metrics abo
 |---|---|---|
 | Accounts per stage | `group by campaign, stage` on the account table | reach rate reported first |
 | Coverage Rate | matched accounts / target accounts | — |
-| Account Reach Rate | accounts with 50+ impressions / target accounts | — |
-| Awareness → Engagement | engaged accounts / aware accounts | 30% |
-| Engagement → Pipeline | pipeline accounts / engaged accounts | 20% |
+| Account Reach Rate | accounts at Aware or beyond / target accounts | — |
+| Awareness → Engagement | accounts at Interested or beyond / accounts at Aware or beyond | 30% |
+| Engagement → Pipeline | accounts at Selecting / accounts at Interested or beyond | 20% |
 | Influence Rate | ABM-influenced pipeline / total pipeline | — |
 | ABM ROI | (revenue − cost) / cost × 100 | — |
 | Pipeline ROI | pipeline / spend | $10+ per $1 |
@@ -327,4 +333,5 @@ Focus on leading indicators (the coverage, awareness, and engagement metrics abo
 - Claiming pipeline ROI at Stage 1 maturity — without account-level attribution and a pipeline connection you can only report reach and engagement.
 - Judging a program on pipeline in its first 90 days — use leading indicators; pipeline lags 6–8 weeks.
 - Reporting from two sources that disagree — the account table is the source; CRM lists are a mirror of the written-back stage.
+- Computing rates from the 30-day columns — an account that went Aware in month 1 is still Aware in month 3; count by stage.
 - Not feeding closed-won back — every closed-won account tightens the lookalike filters in `abm-target-accounts`.

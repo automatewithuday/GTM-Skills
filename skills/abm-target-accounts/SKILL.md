@@ -14,7 +14,7 @@ How to build, score, tier, and manage target account lists for ABM campaigns.
 
 ABM starts with accounts, not leads. You're choosing who to pursue before anything else. Every dollar of ad spend and every BDR hour gets concentrated on accounts that actually fit your ICP.
 
-**Stack this skill assumes:** an agent (Claude Code) reads the skill, a tool layer (Deepline) runs the data providers, and a database holds the state. Provider names below are the ones we run; any equivalent provider reachable through Deepline does the same job. A CRM (HubSpot or any other) is a sync target for the sales team, not the system of record.
+**Stack this skill assumes:** an agent (Claude Code) reads the skill, a tool layer (Deepline) runs the data providers, and a database holds the state. Provider names below are the ones we run; any equivalent provider reachable through Deepline does the same job. A CRM (HubSpot or any other) is read for deals and owners and written weekly for stage, tier, and scores. It is not the system of record.
 
 Related: `abm-retargeting` (reading engagement back and acting on it) and `abm-measurement` (program metrics and ROI). All three skills read and write the same `abm_accounts` table and use the same stage thresholds: 50 impressions, 5 clicks or 10 engagements.
 
@@ -60,6 +60,8 @@ Job: know the total count of accounts that fit.
 1. Pull closed-won accounts from the CRM (or the customer table)
 2. Enrich each one through the company enrichment provider (Crustdata)
 3. Keep the values most winners share: industry, headcount band, region, the tools they run
+   → tech stack is an add-on field group on company enrichment and can be gated on some accounts;
+     a BuiltWith domain lookup is the fallback
    → those shared values are the lookalike filters
 4. Run a company search with the filters and limit = 1
    → the response carries total_count: that is the TAM, before you spend a credit on rows
@@ -130,10 +132,10 @@ Platform rules that decide whether the audience serves:
 
 | Platform | Rule |
 |---|---|
-| LinkedIn company lists | Match best past 1,000 companies; serve past 300 matched members; ~48h to be ready |
+| LinkedIn company lists | 1,000+ companies recommended; serve past 300 matched members; up to 48h to be ready |
 | LinkedIn contact lists | Want 10,000+ rows |
 | LinkedIn sync | Every sync replaces the list, so the weekly push is a refresh, not an append |
-| Meta | A delivery status of 411 means the list matched poorly |
+| Meta | Status code 411 means a low rate of matched people; the list matched poorly |
 
 Why: A gets ads by company name, B gets ads per segment, C gets one message per segment. The depth follows the tier because the tier already encodes the fit.
 
@@ -161,17 +163,24 @@ create table abm_accounts (
 create table abm_signals (          -- one row per dated timing signal
   domain text, campaign text, signal text, source text, observed_at date, points int
 );
+
+create table abm_contacts (         -- the buying committee, one row per person per account
+  person_linkedin text, domain text, campaign text,
+  name text, title text, email text, email_status text   -- only valid goes to audiences and lanes
+);
 ```
+
+Columns and who writes them: `owner` is set at import from the CRM company owner (or assigned by tier). `stage_changed_at` is written on every stage move. `engagements_30d` and `engaged_people_7d` are rolled up by `abm-retargeting`. Stages are cumulative: an account never moves backwards here, so the `*_30d` columns drive lanes and alerts, not the stage count.
 
 Stage definitions (the same five everywhere):
 
-| Stage | Rule |
-|---|---|
-| Identified | fit_score ≥ 40 (tier C or above), in the campaign |
-| Aware | impressions_30d ≥ 50 |
-| Interested | clicks_30d ≥ 5 OR engagements_30d ≥ 10 |
-| Considering | demo booked OR trial signup |
-| Selecting | deal stage = open in the CRM |
+| Stage | Rule | Source |
+|---|---|---|
+| Identified | fit_score ≥ 40 (tier C or above), in the campaign | the table |
+| Aware | impressions_30d ≥ 50 | Campaign Manager company report (LinkedIn only) |
+| Interested | clicks_30d ≥ 5 OR engagements_30d ≥ 10 | company report + post engagers |
+| Considering | demo booked OR trial signup | CRM meetings/deals or the product events table |
+| Selecting | deal stage = open | CRM deals, read weekly |
 
 If sales works out of the CRM, write `stage`, `tier`, `fit_score`, and `timing_score` to the company record on the same weekly run and build the CRM's active lists on those properties. The database stays the source of truth.
 
@@ -181,17 +190,21 @@ One scheduled play, read then write:
 
 ```
 1. Recompute timing_score from abm_signals with the decay rule
-2. Read impressions and clicks per account from the Campaign Manager company engagement report
-   (see abm-retargeting for the post-engagement scrape that fills engagements_30d)
-3. Apply the stage rules in order; never move an account backwards here
-   IF impressions_30d ≥ 50 AND stage = identified → stage = aware
-   IF (clicks_30d ≥ 5 OR engagements_30d ≥ 10) AND stage = aware → stage = interested
+2. Load the weekly CSV export of the Campaign Manager company engagement report,
+   map company name / LinkedIn company URL → domain, write impressions_30d and clicks_30d
+   (see abm-retargeting for the post-engagement roll-up that fills engagements_30d)
+3. Read demo bookings and trial signups (CRM meetings or the product events table) and open deals (CRM deals or the deals table)
+4. Apply the stage rules in order; never move an account backwards; set stage_changed_at on every move
+   IF impressions_30d ≥ 50 AND stage = identified → aware
+   IF (clicks_30d ≥ 5 OR engagements_30d ≥ 10) AND stage = aware → interested
      → hand the account to the outbound lanes in abm-retargeting
-4. Rebuild the tier lists and push them to the ad platforms (LinkedIn replaces on sync)
-5. Write stage, tier, both scores to the CRM if it is in use
+   IF demo booked OR trial signup AND stage = interested → considering
+   IF open deal AND stage in (interested, considering) → selecting
+5. Rebuild the tier lists and push them to the ad platforms (LinkedIn replaces on sync)
+6. Write stage, tier, both scores to the CRM company record (custom properties; create them once)
 ```
 
-No connector product is needed for company-level engagement: the Campaign Manager report is read in weekly and the numbers land in the table.
+No provider reads the company engagement report today, so the weekly job starts from that CSV. Everything after it is a tool-layer call.
 
 ## What a well-run program looks like
 
@@ -234,10 +247,10 @@ Versus cold outbound: a mature ABM program typically reaches the same pipeline f
 | Tiers | A 80–100 (by hand, ads by company name) · B 60–79 (ads per segment) · C 40–59 (one message per segment, 1:many only) · D <40 out |
 | Budget | Spend share per tier decided before launch |
 | Contacts | Title search → email find → validation gate → only valid goes forward |
-| LinkedIn audiences | 1,000+ companies to match well · 300 matched members to serve · 10,000+ rows for contact lists · ~48h · sync replaces |
-| Meta | Delivery status 411 = poor match |
+| LinkedIn audiences | 1,000+ companies recommended · 300 matched members to serve · 10,000+ rows for contact lists · up to 48h · sync replaces |
+| Meta | Status code 411 = low match rate |
 | Stage thresholds | Aware ≥50 impressions · Interested ≥5 clicks or ≥10 engagements · Considering demo/trial · Selecting open deal |
-| State | `abm_accounts` table in any SQL database · CRM is a weekly write-back |
+| State | `abm_accounts` (+ `abm_signals`, `abm_contacts`) in any SQL database · stages cumulative · CRM read for deals, written weekly |
 | 90-day shape | ~1,400 accounts · ~$52K · ~$655K pipeline · ~$12 per $1 |
 | Mature shape | ~26,000 accounts · ~$490K ads · ~$5.3M pipeline · ~$11 per $1 · ~2x ROAS |
 
@@ -252,5 +265,6 @@ Versus cold outbound: a mature ABM program typically reaches the same pipeline f
 - Scoring from website visits or de-anonymized traffic — one test identified 1 company out of 300 visitors, itself.
 - Putting C-tier accounts into 1:1 plays — C-tier is 1:many only; D-tier is excluded.
 - Appending to a LinkedIn list — every sync replaces it; push the full list every week.
-- Launching under 300 matched LinkedIn members, or before the ~48h audience sync completes.
+- Launching under 300 matched LinkedIn members, or before the audience sync completes (up to 48h).
+- Leaving Considering and Selecting to sales — the weekly job reads demos, trials, and open deals, or the pipeline numbers never exist.
 - Making the CRM the source of truth — stage lives in the table; the CRM gets a weekly write-back.
