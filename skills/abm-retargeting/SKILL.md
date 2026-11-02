@@ -1,16 +1,16 @@
 ---
 name: abm-retargeting
-description: Use when planning, building, or troubleshooting retargeting campaigns for ABM target accounts — segmenting audiences by engagement level or page visited, setting ad frequency caps and creative rotation, sequencing a multi-channel play (LinkedIn, Meta, Google, email, BDR, direct mail) after a trigger like a pricing-page visit, setting up website or matched audiences in LinkedIn Campaign Manager, Meta, or Google Ads, syncing CRM (HubSpot) lists to ad audiences, or weighting multi-touch attribution for retargeting. Also use when someone treats ABM retargeting like generic display retargeting or is seeing ad fatigue on target accounts.
+description: "Use when planning, building, or troubleshooting retargeting and engagement follow-up for ABM target accounts — reading ad engagement back from LinkedIn at account and contact level, moving accounts to Aware or Interested, routing interested accounts to email and LinkedIn outreach lanes, alerting account owners, segmenting audiences by engagement level or page visited, setting ad frequency caps and creative rotation, sequencing a multi-channel play after a trigger, setting up website or matched audiences in LinkedIn, Meta, or Google, syncing a database of accounts to ad audiences, or weighting multi-touch attribution for retargeting. Also use when someone treats ABM retargeting like generic display retargeting, mentions the ad or the visit in the first email, or is seeing ad fatigue on target accounts."
 license: MIT
 metadata:
   author: automatewithuday
   source: martechs.io
-  version: "1.0"
+  version: "1.1"
 ---
 
 # ABM retargeting
 
-Audience segmentation, frequency management, and multi-channel orchestration for Account-Based Marketing retargeting campaigns.
+Reading engagement back, acting in lanes, audience segmentation, frequency management, and multi-channel orchestration for Account-Based Marketing retargeting.
 
 ABM retargeting is not the same as generic display retargeting. ABM retargeting:
 
@@ -20,6 +20,8 @@ ABM retargeting is not the same as generic display retargeting. ABM retargeting:
 4. **Accelerates pipeline** — re-engages warm accounts that stalled
 5. **Wins back lost deals** — systematically reactivates churned or lost opportunities
 
+**Stack this skill assumes:** an agent reads the skill, a tool layer (Deepline) runs the providers, and the `abm_accounts` table from `abm-target-accounts` holds the state in any SQL database. Provider names below are the ones we run; swap in any equivalent reachable through the tool layer. The CRM gets a write-back; it is not where the logic runs.
+
 Related: `abm-measurement` for program-level metrics, ROI, and reporting. The attribution weights in this skill are for optimizing retargeting touches, not for reporting program ROI.
 
 ## How to apply this skill
@@ -27,16 +29,57 @@ Related: `abm-measurement` for program-level metrics, ROI, and reporting. The at
 When asked to plan, build, or fix ABM retargeting:
 
 1. Gather inputs (ask for what's missing):
-   - Target account list and each account's CRM/ABM stage
+   - The `abm_accounts` rows for the campaign (stage, tier, 30-day counts) and the contacts table
+   - The company's domain (to list its live ads) and the Campaign Manager company engagement report
    - Which site pages are tagged (LinkedIn Insight Tag, Meta Pixel, Google Tag) and which pages matter (pricing, demo, case studies, blog)
-   - Cumulative touchpoints per account (to place it in a tier)
-   - Channels available: LinkedIn, Meta, Google, email, BDR, direct mail
+   - Channels available: LinkedIn, Meta, Google, email (Smartlead or equivalent), LinkedIn outreach (HeyReach or equivalent), BDR, direct mail, Slack
    - Current frequency and number of active creatives
    - Which accounts are high-value and which contacts are executives
-2. Build in this order: segment tiers → frequency and rotation plan by audience temperature → day-by-day multi-channel play → platform audience setup → CRM sync loop.
-3. Report: the tier each account falls into and the content it should get, the frequency cap and rotation cadence per segment, the play as a day-by-day schedule, and the exact setup steps for each platform in use.
+2. Build in this order: engagement read-back → stage moves → lanes and alerts → segment tiers → frequency and rotation plan → day-by-day play → platform audience setup → database-to-platform sync loop.
+3. Report: how engagement lands in the table and at what cadence, which accounts moved stage this week, who went to which lane with the problem each email leads with, the tier each account falls into and the content it should get, the frequency cap and rotation cadence per segment, and the exact setup steps for each platform in use.
 
-Do not run one ad on repeat, use lookalike audiences for ABM, or prospect on Meta — retargeting only. Every audience is known accounts who visited, never anonymous traffic.
+Do not run one ad on repeat, lean on platform lookalike audiences, prospect on Meta, or mention the ad or the visit in outreach. Every audience is known accounts, never anonymous traffic.
+
+## Read engagement back
+
+Job: the table knows who warmed up, at company and contact level, from the same rows.
+
+```
+1. List every live ad for your domain with the post link behind it
+   → Adyntel through the tool layer (or the Apify LinkedIn Ads scraper)
+2. Scrape the reactions and comments on each post
+   → HarvestAPI post engagement
+3. Match each engaging person to an account (domain, then LinkedIn company)
+   → write one row per person per post to abm_engagements
+4. Roll engagements up to the company → engagements_30d, engaged_people_7d on abm_accounts
+5. Impressions and clicks per account still come from the Campaign Manager
+   company engagement report, read in weekly → impressions_30d, clicks_30d
+```
+
+```sql
+create table abm_engagements (
+  person_linkedin text, domain text, campaign text,
+  post_url text, kind text,        -- reaction | comment
+  observed_at date
+);
+```
+
+Why: the contact view and the company view come from the same rows, so the number sales sees on the account is the sum of people they can name.
+
+## Act in lanes
+
+Stage moves (from `abm-target-accounts`): 50 impressions moves an account to Aware; 5 clicks or 10 engagements moves it to Interested.
+
+| Condition | Lane |
+|---|---|
+| Interested AND a known person engaged | Email sequence (Smartlead) and LinkedIn sequence (HeyReach), pushed through the tool layer, from the name whose ads they saw |
+| 3 or more engaged people at one account in a week | Slack alert to the account owner the same day |
+| Interested, no response by day 21 | Drop to Warm, reduce frequency, change the angle |
+| Executive at a high-value account | Direct mail and InMail on top of the lanes |
+
+The email talks about the problem the signals add up to. It never mentions the ad, the post, or the visit.
+
+Why: outbound after the ads means the first email comes from a name they have seen in their feed. ~4 impressions per person per week with 3 or 4 creatives live keeps that recall from turning into fatigue.
 
 ## Audience segmentation
 
@@ -92,21 +135,23 @@ COOL audiences (46-90 days):
   → Focus on reactivation messaging
 ```
 
-## Multi-channel orchestration: pricing-page trigger play
+## Multi-channel orchestration: trigger play
+
+The trigger is a stage move to Interested, a pricing-page visit by a known account, or a job-change signal. The play is the same.
 
 ```
-Day 0:  Account visits pricing page (trigger)
+Day 0:  Trigger lands in the table
         → Add to "Hot" retargeting segment
 
 Day 1:  LinkedIn ad (case study)
-        Email: "Saw you checking us out..."
+        Email 1: leads with the problem the signals add up to (never the ad or the visit)
 
 Day 3:  Meta retargeting ad (social proof)
 
 Day 5:  LinkedIn ad (product demo)
-        BDR LinkedIn connection request
+        LinkedIn connection request from the same sender
 
-Day 7:  Email: Value proposition reminder
+Day 7:  Email 2: value proposition reminder
         LinkedIn ad (comparison content)
 
 Day 10: BDR outreach email
@@ -141,60 +186,64 @@ Weight adjustments:
 ### LinkedIn Campaign Manager
 
 ```
-1. Audience > Create Audience > Website
-2. Select pages to retarget (use OR logic for multiple URLs)
+1. Push the tier company list through the tool layer (audience_kind companies)
+   → every sync replaces the list; push the full list weekly
+2. Audience > Create Audience > Website; select pages (OR logic for multiple URLs)
 3. Set lookback window (7/30/90/180 days)
-4. Create matched audience from company list (separate)
-5. Combine: Website visitors AND Company list
+4. Combine: Website visitors AND Company list
    → This retargets only known accounts who visited
+5. Serves past 300 matched members; matches best past 1,000 companies; ~48h
 ```
 
 ### Meta Business Manager
 
 ```
 1. Install Meta Pixel on ABM landing pages
-2. Create Custom Audience from website traffic
-3. Upload company email domains (limited match rate)
-4. Use Lookalike audiences sparingly (dilutes ABM precision)
-5. Focus on retargeting, not prospecting on Meta
+2. Push hashed contact lists through the tool layer (mode replace for full snapshots)
+3. Create Custom Audience from website traffic
+4. Delivery status 411 = the list matched poorly; fix the contact list, not the creative
+5. Use Lookalike audiences sparingly (dilutes ABM precision)
+6. Focus on retargeting, not prospecting on Meta
 ```
 
 ### Google Ads
 
 ```
-1. Create remarketing lists from Google Tag
-2. Target specific pages (pricing, demo request)
+1. Push hashed contact lists as Customer Match through the tool layer
+2. Create remarketing lists from Google Tag; target specific pages (pricing, demo request)
 3. Use RLSA for search intent + retargeting combo
-4. Combine with company IP targeting (DemandBase, RollWorks)
+4. Combine with IP-to-company targeting where available
 5. Note: Match rates are low for B2B - use as supplement only
 ```
 
-## CRM → ad platform data flow
+## Database → ad platform → database loop
 
 ```
-HubSpot Company Lists (by ABM stage)
+abm_accounts (tier, stage per campaign)
+  ↓ weekly play through the tool layer
+LinkedIn company audiences per tier (replace) · Meta + Google hashed contact lists
+  ↓ ~48 hour sync
+Campaign Manager targets the audience
   ↓
-Active list filters (e.g., "ABM Stage = Interested")
+Engagement comes back two ways:
+  · Campaign Manager company engagement report → impressions_30d, clicks_30d
+  · Live ads (Adyntel/Apify) → post links → HarvestAPI reactions and comments → abm_engagements → engagements_30d
   ↓
-HubSpot Ad Audiences (auto-sync to LinkedIn)
+Stage rules run → stage changes in the table → lanes fire
   ↓
-LinkedIn Matched Audiences (~48 hour sync)
+CRM gets stage, tier, scores written back (optional)
   ↓
-Campaign Manager targets audience
-  ↓
-Engagement data flows back via Fibbler
-  ↓
-HubSpot updates account stage
-  ↓
-List membership changes automatically
-  ↓
-LinkedIn audience updates (removes old, adds new)
+Next weekly push rebuilds every platform list from the table
 ```
 
 ## Quick reference
 
 | Decision | Rule |
 |---|---|
+| Engagement sources | Impressions/clicks: Campaign Manager company report weekly · Engagements: live ads → post links → reactions and comments, matched to accounts |
+| Stage moves | ≥50 impressions → Aware · ≥5 clicks or ≥10 engagements → Interested |
+| Outreach lane | Interested + known person engaged → email and LinkedIn sequences through the tool layer; email leads with the problem, never the ad |
+| Alert | 3+ engaged people at one account in a week → Slack to the owner same day |
 | Content by engagement | 1–2 touches: awareness · 3–5: solution · 6–10: conversion · 10+: BDR outreach + direct offers |
 | Frequency cap | ~4 impressions / person / week; bottom-of-funnel up to ~15 per 30 days |
 | Creatives active | HOT 3–4 · WARM 2–3 · COOL 2 |
@@ -203,13 +252,18 @@ LinkedIn audience updates (removes old, adds new)
 | Lookback windows | 7 / 30 / 90 / 180 days |
 | Play exit | Day 21 with no response → move to Warm, reduce frequency, change angle |
 | Attribution split | First 20% · Last 20% · Linear 60%; BDR meeting 2x, download 1.5x, click 1x, impression 0.5x, email open 0.25x |
-| LinkedIn audience logic | Website visitors AND company list |
-| CRM → LinkedIn sync | ~48 hours |
+| LinkedIn audience logic | Website visitors AND company list · sync replaces · 300 members to serve · ~48h |
+| Meta | Replace mode for snapshots · status 411 = poor match |
 
 ## Common mistakes
 
+- Mentioning the ad, the post, or the visit in the first email — lead with the problem the signals add up to.
+- Reading engagement at company level only — scrape the post engagers so the company number is the sum of named people.
+- Waiting on a connector product for company-level engagement — the Campaign Manager report read weekly is enough.
 - Running one ad on repeat — frequency without rotation is fatigue. Keep 3–4 variants live for hot audiences.
 - Retargeting anonymous traffic — always intersect website visitors with the company list so only known accounts see ads.
+- Appending to a LinkedIn audience — every sync replaces it; rebuild the full list from the table each week.
+- Blaming the creative for a Meta 411 — it is the contact list that matched poorly.
 - Using lookalike audiences — they dilute ABM precision. Use sparingly or not at all.
 - Prospecting on Meta — Meta is for retargeting in ABM, not net-new.
 - Leaning on Google remarketing — B2B match rates are low; use it as a supplement to LinkedIn, not the core.

@@ -1,11 +1,11 @@
 ---
 name: abm-measurement
-description: Use when measuring, reporting on, or auditing an account-based marketing (ABM) program — choosing account-level metrics by funnel stage (coverage, awareness/reach, engagement, pipeline, revenue), picking an attribution model (weighted multi-touch, W-shaped, hybrid), calculating ABM ROI, pipeline ROI, cost per engaged account, cost per pipeline account, pipeline velocity, ABM CAC or LTV:CAC, comparing results to benchmarks, or checking measurement maturity before launch. Also use when someone reports ABM results with lead or MQL metrics — that is the wrong model and this skill corrects it.
+description: "Use when measuring, reporting on, or auditing an account-based marketing (ABM) program — counting accounts per stage per campaign from the account table or CRM lists, choosing account-level metrics by funnel stage (coverage, awareness/reach, engagement, pipeline, revenue), picking an attribution model (weighted multi-touch, W-shaped, hybrid), calculating ABM ROI, pipeline ROI, cost per engaged account, cost per pipeline account, pipeline velocity, ABM CAC or LTV:CAC, comparing results to benchmarks, feeding closed-won back into the target list, or checking measurement maturity before launch. Also use when someone reports ABM results with lead or MQL metrics — that is the wrong model and this skill corrects it."
 license: MIT
 metadata:
   author: automatewithuday
   source: martechs.io
-  version: "1.0"
+  version: "1.1"
 ---
 
 # How to measure ABM success
@@ -21,21 +21,37 @@ ABM measurement is fundamentally different from demand gen measurement. You're t
 
 If you're measuring ABM with lead metrics, you're doing it wrong.
 
+**Stack this skill assumes:** the `abm_accounts` table from `abm-target-accounts` (any SQL database) holds stage, tier, and the 30-day engagement counts per account per campaign, and `abm-retargeting` keeps them current. Every stage count below is one query on that table. If sales reports out of the CRM, the same counts come from active lists built on the written-back stage property; the numbers must match the table.
+
 ## How to apply this skill
 
 When asked to measure, report on, or audit an ABM program:
 
 1. Gather inputs (ask for what's missing; work with what's available):
-   - Total target accounts, accounts matched in LinkedIn + CRM, contacts per persona
-   - Per-account impressions, clicks, engagements, website visits, content downloads
-   - Engaged accounts, accounts in pipeline, pipeline value, closed-won revenue
+   - The `abm_accounts` rows for the campaign (stage, tier, impressions, clicks, engagements per account) and the contacts table for persona coverage
+   - Accounts matched in each ad platform (from the audience status after sync)
+   - Accounts in pipeline, pipeline value, closed-won revenue (from the CRM or deals table)
    - Total ABM spend (ads + tools + team), number of opportunities, win rate, average deal size, sales cycle length
    - Which measurement maturity stage they are at (see below) — it bounds what can honestly be reported
 2. Compute stage metrics first (coverage → awareness → engagement → pipeline), then ROI and efficiency metrics. Use the formulas exactly as written below.
-3. Report each number next to its benchmark, name the weakest stage, and give one recommendation. Use W-shaped attribution for executive views and linear for optimization views.
+3. Report reach rate first, then each number next to its benchmark, name the weakest stage, and give one recommendation. Use W-shaped attribution for executive views and linear for optimization views.
 4. If the program is under 90 days old, report leading indicators only and say so — pipeline lags 6–8 weeks.
+5. Close the loop: closed-won accounts go back into stage 1 of `abm-target-accounts` and tighten the lookalike filters.
 
 Do not translate ABM results into lead or MQL counts. Every metric here is at the account level.
+
+## Accounts per stage per campaign
+
+One set of numbers both teams can read. Count accounts, never contacts or leads:
+
+```sql
+select campaign, stage, count(*) as accounts
+from abm_accounts
+group by campaign, stage
+order by campaign, stage;
+```
+
+CRM active lists per stage per campaign give the same counts for the sales view when the stage property is written back weekly.
 
 ## Metrics by stage
 
@@ -240,7 +256,7 @@ Gaps:
 
 What you can measure:
 
-- Account-level engagement (via Fibbler)
+- Account-level engagement (Campaign Manager company engagement report read in weekly, plus post engagers scraped and matched to accounts, both in the account table)
 - Stage progression
 - Pipeline influenced by ABM
 - Basic attribution
@@ -288,6 +304,7 @@ Focus on leading indicators (the coverage, awareness, and engagement metrics abo
 
 | Metric | Formula | Benchmark / target |
 |---|---|---|
+| Accounts per stage | `group by campaign, stage` on the account table | reach rate reported first |
 | Coverage Rate | matched accounts / target accounts | — |
 | Account Reach Rate | accounts with 50+ impressions / target accounts | — |
 | Awareness → Engagement | engaged accounts / aware accounts | 30% |
@@ -309,3 +326,5 @@ Focus on leading indicators (the coverage, awareness, and engagement metrics abo
 - Showing one attribution view to everyone — execs get W-shaped, optimizers get linear.
 - Claiming pipeline ROI at Stage 1 maturity — without account-level attribution and a pipeline connection you can only report reach and engagement.
 - Judging a program on pipeline in its first 90 days — use leading indicators; pipeline lags 6–8 weeks.
+- Reporting from two sources that disagree — the account table is the source; CRM lists are a mirror of the written-back stage.
+- Not feeding closed-won back — every closed-won account tightens the lookalike filters in `abm-target-accounts`.

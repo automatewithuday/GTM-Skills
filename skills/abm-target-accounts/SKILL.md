@@ -1,34 +1,37 @@
 ---
 name: abm-target-accounts
-description: Use when building, sizing, scoring, tiering, or managing a target account list for ABM — working out how many accounts a revenue target needs, defining ICP criteria, building lookalikes from best customers, enriching and scoring accounts (Clay, BuiltWith, Apollo), setting A/B/C/D tiers, importing accounts into HubSpot with ABM stage properties, syncing company lists to LinkedIn Campaign Manager, or automating stage progression from ad engagement. Also use when a team is starting ABM from leads instead of accounts, or is over-engineering account scoring with intent and de-anonymization data.
+description: "Use when building, sizing, scoring, tiering, or managing a target account list for ABM — working out how many accounts a revenue target needs, sizing TAM from closed-won lookalike filters, scoring fit and timing separately, setting A/B/C/D tiers with a budget split, building the buying committee, pushing company and contact audiences to LinkedIn, Meta, or Google, or keeping ABM stage state in a database (Supabase, Postgres, any SQL) with an optional CRM write-back. Also use when a team is starting ABM from leads instead of accounts, blends fit and timing into one score, or relies on platform lookalike audiences or website de-anonymization."
 license: MIT
 metadata:
   author: automatewithuday
   source: martechs.io
-  version: "1.0"
+  version: "1.1"
 ---
 
 # ABM target account lists
 
-How to build, score, stage, and manage target account lists for ABM campaigns.
+How to build, score, tier, and manage target account lists for ABM campaigns.
 
 ABM starts with accounts, not leads. You're choosing who to pursue before anything else. Every dollar of ad spend and every BDR hour gets concentrated on accounts that actually fit your ICP.
 
-Related: `abm-measurement` (program metrics and ROI) and `abm-retargeting` (what to do with accounts once they engage). The stage thresholds below — 50 impressions, 5 clicks or 10 engagements — are the same ones those skills use.
+**Stack this skill assumes:** an agent (Claude Code) reads the skill, a tool layer (Deepline) runs the data providers, and a database holds the state. Provider names below are the ones we run; any equivalent provider reachable through Deepline does the same job. A CRM (HubSpot or any other) is a sync target for the sales team, not the system of record.
+
+Related: `abm-retargeting` (reading engagement back and acting on it) and `abm-measurement` (program metrics and ROI). All three skills read and write the same `abm_accounts` table and use the same stage thresholds: 50 impressions, 5 clicks or 10 engagements.
 
 ## How to apply this skill
 
 When asked to build or fix a target account list:
 
 1. Gather inputs (ask for what's missing):
-   - Revenue target, ACV, close rate, qualification rate — if the user has no stage rates, use the doc's benchmark rates in the sizing example
-   - Best-customer list from the CRM (for lookalikes) and any win-loss analysis
-   - Tools available: Clay, BuiltWith, Apollo, HubSpot, LinkedIn Campaign Manager, a HubSpot↔LinkedIn connector
+   - Revenue target, ACV, close rate, qualification rate — if the user has no stage rates, use the benchmark rates in the sizing example
+   - Closed-won list from the CRM (for lookalike filters) and any win-loss analysis
+   - Providers available through the tool layer: company search and enrichment (Crustdata), technographics (BuiltWith), hiring signals (PredictLeads), job changes (Deepline job change check), LinkedIn post engagement (HarvestAPI), email finding (Prospeo), email validation (LeadMagic), audience push (LinkedIn, Meta, Google)
+   - Which database holds state (Supabase, Postgres, anything with SQL) and whether a CRM write-back is wanted
    - Whether the list is for 1:1, 1:few, or 1:many plays (decides which tiers are in scope)
-2. Work in this order: size the list → build and enrich → score and tier → import to CRM with stage properties → set up stage lists and automation → sync to LinkedIn.
-3. Report: required account count with the math shown, the build steps in order, tier cut-offs, the five stage lists with their thresholds, and the automation rules. Say what the program should look like at 90 days and at maturity using the illustrative figures.
+2. Work in this order: size the list → size the market and build the list → score fit and timing separately → tier and write the budget split → build the buying committee → push audiences → write state → schedule the weekly rebuild.
+3. Report: required account count with the math shown, the lookalike filters and the TAM count they return, tier cut-offs and the spend share per tier, the table the state lives in, the five stage definitions with their thresholds, and the weekly job. Say what the program should look like at 90 days and at maturity using the illustrative figures.
 
-Do not add website-visit or intent-based scoring on top of this. Score from ad engagement pushed to the CRM; keep the model simple enough to execute.
+Do not score from website visits or de-anonymized traffic, and do not blend fit and timing into one number.
 
 ## How many accounts you need
 
@@ -49,86 +52,146 @@ $1,000,000 ÷ $50,000 = 20 deals
 
 The headline number: across these stages, roughly 2.5% of targeted accounts convert to pipeline (an open, qualified opportunity) and about 0.6% close. So a ~3,250-account program produces ~80 opportunities and ~20 deals at a $50K deal size.
 
-## Building the list
+## 1. Size the market before you buy anything
 
-### Lookalikes from your best customers
-
-1. Export top enterprise/growth customers from CRM
-2. Identify shared attributes (industry, size, tech stack, funding stage)
-3. Use Clay to find similar companies that match the pattern
-4. Cross-reference with BuiltWith for technographic match
-
-### Build pipeline
+Job: know the total count of accounts that fit.
 
 ```
-1. Define ICP criteria (firmographic + technographic)
-   → Use win-loss analysis from CRM to identify patterns
-
-2. Build initial account list
-   → Clay + BuiltWith API for technographic targeting
-   → Apollo for firmographic + contact discovery
-   → CRM export for recycled/closed-lost accounts
-
-3. Enrich accounts
-   → Clay enrichment (revenue, tech stack, funding, headcount)
-   → BuiltWith for technology detection
-   → ICP scoring (0-100)
-
-4. Score and tier
-   → A-tier (80-100): Perfect fit + strong signals
-   → B-tier (60-79): Good fit
-   → C-tier (40-59): Okay fit - maybe for 1:many only
-   → D-tier (<40): Exclude
-
-5. Import to CRM (HubSpot)
-   → Create company records
-   → Set ABM Campaign Name property
-   → Set ABM Stage = "Identified"
-   → Add to ABM campaign active list
-
-6. Sync to LinkedIn Campaign Manager
-   → Push company lists from HubSpot to LinkedIn
-   → Filter by persona using LinkedIn's native targeting
-   → Wait ~48 hours for audience to be ready
-   → Minimum 300 LinkedIn members required to start a campaign
+1. Pull closed-won accounts from the CRM (or the customer table)
+2. Enrich each one through the company enrichment provider (Crustdata)
+3. Keep the values most winners share: industry, headcount band, region, the tools they run
+   → those shared values are the lookalike filters
+4. Run a company search with the filters and limit = 1
+   → the response carries total_count: that is the TAM, before you spend a credit on rows
+5. Add the technographic cut from BuiltWith lists
+6. Export rows only once the count is in range for the sizing math above
 ```
 
-## Scoring: keep it simple
+Why: a lookalike is a filter set you can read and argue with. A platform lookalike audience is a model you cannot audit, and it stays inside the ad platform where your database never sees it.
 
-Critical lesson from real ABM programs: teams that overcomplicate scoring by adding website visits, page-level intent signals, and weighted scores across multiple data sources struggle to execute because:
+## 2. Score fit and timing separately
 
-- Website visitor de-anonymization is unreliable (in one test, a de-anonymization tool identified only 1 company out of 300 visitors — itself)
-- Complex scoring models break in practice
+Job: one static fit score, one decaying timing score, never blended.
 
-What actually works: use quantitative ad engagement data from LinkedIn pushed to CRM, plus qualitative campaign engagement data for personalizing outreach.
+**Fit** is 0 to 100 from the closed-won filters. Set it once a quarter. It decides the tier.
 
-## Stage lists in the CRM
+**Timing** is a stack of dated signals. It decides who gets worked this week inside the tier.
 
-Create separate active lists for each stage of each campaign:
+| Signal | Source via the tool layer |
+|---|---|
+| Open roles on the team you sell to | PredictLeads job postings |
+| A past champion who moved in the last 14 to 45 days | Deepline job change check |
+| People at the account engaging with your LinkedIn posts | HarvestAPI post reactions and comments |
+| Closed-lost accounts that went quiet | CRM closed-lost export |
 
-- `[Campaign Name] - Identified` — ICP score ≥ threshold, ABM Campaign = X
-- `[Campaign Name] - Aware` — cumulative impressions ≥ 50
-- `[Campaign Name] - Interested` — cumulative clicks ≥ 5 OR engagements ≥ 10
-- `[Campaign Name] - Considering` — demo booked OR trial signup
-- `[Campaign Name] - Selecting` — deal stage = open
-
-## Stage progression automation
+Decay rule:
 
 ```
-Trigger: Company property "LinkedIn Ad Clicks - 30d" changes
-
-IF Clicks ≥ 5 AND ABM Stage = "Aware":
-  → Update ABM Stage = "Interested"
-  → Remove from Aware LinkedIn audience
-  → Add to Interested LinkedIn audience
-  → Trigger BDR notification workflow
-
-IF Impressions ≥ 50 AND ABM Stage = "Identified":
-  → Update ABM Stage = "Aware"
-  → Content changes automatically via audience list updates
+signal age 0–30 days   → full points
+signal age 31–60 days  → half points
+signal age 61+ days    → 0
+No single signal is worth more than half the timing max.
 ```
 
-Note: as of early 2025, HubSpot cannot natively pull company-level engagement data from LinkedIn Campaign Manager. You need a connector tool (ZenABM, Fibbler, or custom API).
+Why: blend them into one number and a perfect-fit account with nothing happening ranks next to a poor-fit account with a job post. One trigger is public and everyone sees it the same day. A stack on one account describes a problem you can offer to fix.
+
+## 3. Tier the list and write the budget split down
+
+Job: A/B/C/D tiers with a spend share each.
+
+```
+A-tier (80–100): worked by hand, ads by company name
+B-tier (60–79):  ads per segment
+C-tier (40–59):  one message per segment, 1:many only
+D-tier (<40):    out
+```
+
+- Set the A cut-off where the team can work every A account by hand.
+- Decide the spend share per tier before launch and treat it as a starting point.
+- Write the tier and both scores to the account row every week (and to the CRM company record if sales reads the CRM).
+
+Why: the split is the ABM budget. Everything else is execution.
+
+## 4. Build the buying committee, then the audiences
+
+Job: the people at each account, then the ad lists.
+
+```
+1. Person search by the titles that buy (Crustdata person search, filtered to the account list)
+2. Email finding (Prospeo)
+3. Email validation (LeadMagic) is the gate → only valid goes forward
+4. Write contacts to the contacts table (and to the CRM if wanted)
+5. Push audiences through the tool layer:
+   → LinkedIn: company lists per tier (audience_kind companies)
+   → Meta and Google: hashed contact lists
+```
+
+Platform rules that decide whether the audience serves:
+
+| Platform | Rule |
+|---|---|
+| LinkedIn company lists | Match best past 1,000 companies; serve past 300 matched members; ~48h to be ready |
+| LinkedIn contact lists | Want 10,000+ rows |
+| LinkedIn sync | Every sync replaces the list, so the weekly push is a refresh, not an append |
+| Meta | A delivery status of 411 means the list matched poorly |
+
+Why: A gets ads by company name, B gets ads per segment, C gets one message per segment. The depth follows the tier because the tier already encodes the fit.
+
+## Where the state lives
+
+One table, one row per account per campaign. Supabase, Postgres, SQLite, anything with SQL. The retargeting and measurement skills read the same rows.
+
+```sql
+create table abm_accounts (
+  domain            text not null,
+  campaign          text not null,
+  fit_score         int,            -- 0–100, set quarterly
+  timing_score      int,            -- recomputed weekly from abm_signals
+  tier              char(1),        -- A/B/C/D
+  stage             text,           -- identified | aware | interested | considering | selecting
+  impressions_30d   int default 0,
+  clicks_30d        int default 0,
+  engagements_30d   int default 0,
+  engaged_people_7d int default 0,
+  stage_changed_at  timestamptz,
+  owner             text,
+  primary key (domain, campaign)
+);
+
+create table abm_signals (          -- one row per dated timing signal
+  domain text, campaign text, signal text, source text, observed_at date, points int
+);
+```
+
+Stage definitions (the same five everywhere):
+
+| Stage | Rule |
+|---|---|
+| Identified | fit_score ≥ 40 (tier C or above), in the campaign |
+| Aware | impressions_30d ≥ 50 |
+| Interested | clicks_30d ≥ 5 OR engagements_30d ≥ 10 |
+| Considering | demo booked OR trial signup |
+| Selecting | deal stage = open in the CRM |
+
+If sales works out of the CRM, write `stage`, `tier`, `fit_score`, and `timing_score` to the company record on the same weekly run and build the CRM's active lists on those properties. The database stays the source of truth.
+
+## Stage progression: the weekly job
+
+One scheduled play, read then write:
+
+```
+1. Recompute timing_score from abm_signals with the decay rule
+2. Read impressions and clicks per account from the Campaign Manager company engagement report
+   (see abm-retargeting for the post-engagement scrape that fills engagements_30d)
+3. Apply the stage rules in order; never move an account backwards here
+   IF impressions_30d ≥ 50 AND stage = identified → stage = aware
+   IF (clicks_30d ≥ 5 OR engagements_30d ≥ 10) AND stage = aware → stage = interested
+     → hand the account to the outbound lanes in abm-retargeting
+4. Rebuild the tier lists and push them to the ad platforms (LinkedIn replaces on sync)
+5. Write stage, tier, both scores to the CRM if it is in use
+```
+
+No connector product is needed for company-level engagement: the Campaign Manager report is read in weekly and the numbers land in the table.
 
 ## What a well-run program looks like
 
@@ -165,10 +228,16 @@ Versus cold outbound: a mature ABM program typically reaches the same pipeline f
 | Benchmark stage rates | Aware 55% · Interested 30% · Considering 20% · Qualified 75% · Close 25% |
 | Headline conversion | ~2.5% of targeted accounts → pipeline · ~0.6% close |
 | Worked example | $1M ARR at $50K ACV → 20 deals → ~3,250 accounts → ~80 opps |
-| Tiers (ICP score 0–100) | A 80–100 · B 60–79 · C 40–59 (1:many only) · D <40 exclude |
+| TAM count | Company search with the lookalike filters and limit 1 → total_count, no row credits spent |
+| Fit score | 0–100 from closed-won filters · set quarterly · decides the tier |
+| Timing score | Dated signals · full points 30 days, half to 60, then 0 · no signal > half the max · decides who is worked this week |
+| Tiers | A 80–100 (by hand, ads by company name) · B 60–79 (ads per segment) · C 40–59 (one message per segment, 1:many only) · D <40 out |
+| Budget | Spend share per tier decided before launch |
+| Contacts | Title search → email find → validation gate → only valid goes forward |
+| LinkedIn audiences | 1,000+ companies to match well · 300 matched members to serve · 10,000+ rows for contact lists · ~48h · sync replaces |
+| Meta | Delivery status 411 = poor match |
 | Stage thresholds | Aware ≥50 impressions · Interested ≥5 clicks or ≥10 engagements · Considering demo/trial · Selecting open deal |
-| LinkedIn audience | Min 300 members · ~48h to be ready |
-| HubSpot ↔ LinkedIn engagement | Needs a connector (ZenABM, Fibbler, custom API) |
+| State | `abm_accounts` table in any SQL database · CRM is a weekly write-back |
 | 90-day shape | ~1,400 accounts · ~$52K · ~$655K pipeline · ~$12 per $1 |
 | Mature shape | ~26,000 accounts · ~$490K ads · ~$5.3M pipeline · ~$11 per $1 · ~2x ROAS |
 
@@ -176,8 +245,12 @@ Versus cold outbound: a mature ABM program typically reaches the same pipeline f
 
 - Starting from leads — pick the accounts first; every dollar and BDR hour concentrates on them.
 - Guessing list size — work backwards from the revenue target through the stage rates.
-- Over-engineering scoring — website visits, intent feeds, and multi-source weighted scores break in practice. Score from LinkedIn ad engagement pushed to the CRM.
-- Trusting de-anonymization — one test identified 1 company out of 300 visitors, itself.
+- Paying for rows before knowing the count — a limit-1 search returns the TAM for free.
+- Using a platform lookalike audience — it is a model you cannot audit and the database never sees it. Lookalikes are filter sets.
+- Blending fit and timing — a perfect-fit account with nothing happening ends up next to a poor-fit account with one job post.
+- Letting one timing signal dominate — cap every signal at half the max; a single public trigger is not a reason.
+- Scoring from website visits or de-anonymized traffic — one test identified 1 company out of 300 visitors, itself.
 - Putting C-tier accounts into 1:1 plays — C-tier is 1:many only; D-tier is excluded.
-- Launching under 300 LinkedIn members, or before the ~48h audience sync completes.
-- Expecting stage automation to work out of the box in HubSpot — company-level LinkedIn engagement needs a connector.
+- Appending to a LinkedIn list — every sync replaces it; push the full list every week.
+- Launching under 300 matched LinkedIn members, or before the ~48h audience sync completes.
+- Making the CRM the source of truth — stage lives in the table; the CRM gets a weekly write-back.
