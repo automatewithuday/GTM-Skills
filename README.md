@@ -82,7 +82,7 @@ The full cold outbound stack, in the order you'd run it. New to cold email? Star
 | [`smartlead-inbox-manager`](skills/smartlead-inbox-manager/SKILL.md) | warmup settings, signatures, active/insurance tagging |
 | [`email-deliverability-audit`](skills/email-deliverability-audit/SKILL.md) | diagnostic tool (SPF/DKIM/DMARC, spam placement, 1% rule) |
 | [`deliverability-incident-response`](skills/deliverability-incident-response/SKILL.md) | triage playbook for spam, bounces, blacklists, warmup blocks |
-| [`email-gateway-detection`](skills/email-gateway-detection/SKILL.md) | tag every domain with its secure email gateway (Proofpoint, Mimecast, Barracuda, Cisco) and mailbox provider, free via DNS first, then route campaigns per gateway |
+| [`email-gateway-detection`](skills/email-gateway-detection/SKILL.md) | tag every domain with its secure email gateway (Proofpoint, Mimecast, Barracuda, Cisco), mailbox provider and the SaaS tools it has verified in DNS, free via DNS first, then route campaigns per gateway |
 
 #### Track 3 — List building
 
