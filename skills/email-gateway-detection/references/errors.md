@@ -11,7 +11,14 @@
 | timeout | resolver did not answer in 4s | rerun later | no |
 | servfail | no nameserver could answer | rerun later, then drop if repeated | no |
 
-`seg_vendor` is empty whenever `seg_status` is not `ok`.
+`seg_vendor` and `inbox_tier` are empty whenever `seg_status` is not `ok`.
+
+Over DoH (`--resolver doh`) the same statuses apply: rcode 3 is `nxdomain` and final; rcode 2, any HTTP error (429, 5xx), a connection reset or a non-JSON body moves the query to the next endpoint (Google, then Cloudflare), and `servfail` means both failed; `timeout` means at least one endpoint timed out and none answered.
+
+| Exit message | Cause | Action |
+|---|---|---|
+| `resolver preflight failed: gmail.com -> nxdomain` or `-> servfail` | the resolver cannot see DNS at all (walled sandbox, broken `/etc/resolv.conf`, egress proxy without DNS) | nothing was written; retry with `--resolver doh`, else run elsewhere. Never bypass this check: it is what keeps a dead resolver from caching every good domain as dropped |
+| `resolver=system needs dnspython` | `--resolver system` forced without the package | `pip install dnspython`, or `--resolver doh` |
 
 ## Gateway bounce strings (post-send, for learning which layer failed)
 

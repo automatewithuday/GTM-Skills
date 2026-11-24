@@ -18,7 +18,9 @@ Rules (see SKILL.md): paid stages never overwrite a DNS answer; disagreement set
 Keys: set LEADMAGIC_API_KEY and/or PROSPEO_API_KEY (environment or a .env file in the working
 directory) to call the vendors directly with your own account. Without a key the call goes
 through the deepline CLI, which must be on PATH and authenticated (deepline auth status).
-Requires: dnspython.
+
+Resolver: --resolver system (dnspython) | doh (Google then Cloudflare over HTTPS, stdlib only) | auto.
+Ramp gate: --max-tier N holds rows whose inbox_tier is above N in <out>.held.csv (see SKILL.md).
 """
 from __future__ import annotations
 
@@ -34,7 +36,8 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from mx_lookup import FIELDS, load_map, tag_rows  # noqa: E402
+from mx_lookup import (FIELDS, add_common_args, load_map, make_client, preflight, tag_rows, tier_of,  # noqa: E402
+                       tier_summary, write_outputs)
 
 EXTRA_FIELDS = ["vendor_raw", "email_status"]
 NAMED = lambda v: v not in ("", "none", "unknown")  # noqa: E731
@@ -220,6 +223,8 @@ def run(rows: list[dict], stage: str, gmap: dict, call=None, cache: dict | None 
                 if not r.get("email"):
                     r["email_status"] = ""  # verdict for a made-up info@ address means nothing
 
+    for r in rows:  # paid stages can move a row out of `unknown`, so the tier is derived again here
+        r["inbox_tier"] = tier_of(r)
     stats["conflicts"] = sum(1 for r in rows if r.get("seg_conflict") == "true")
     return stats
 
@@ -232,6 +237,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--all", action="store_true", help="Stage 3 on every row (cross-check), not just unknowns")
     ap.add_argument("--cache", default=".seg_cache.json", help="DNS cache; paid answers are written back too")
     ap.add_argument("--ttl-days", type=int, default=45)
+    add_common_args(ap)
     a = ap.parse_args(argv)
 
     with open(a.inp, newline="") as f:
@@ -248,7 +254,9 @@ def main(argv: list[str] | None = None) -> int:
 
     dns_lookups = 0
     if "seg_vendor" not in rows[0]:
-        dns_lookups = tag_rows(rows, cache, a.ttl_days, gmap=gmap)
+        client = make_client(a.resolver)
+        preflight(client)
+        dns_lookups = tag_rows(rows, cache, a.ttl_days, client=client, gmap=gmap)
     unknown_before = sum(1 for r in rows if r["seg_vendor"] == "unknown")
 
     stats = run(rows, a.stage, gmap, cache=cache, only_unknown=not a.all)
@@ -257,10 +265,7 @@ def main(argv: list[str] | None = None) -> int:
             cache[r["domain"]].update({k: r.get(k, "") for k in FIELDS if k != "domain"})  # pre-dns_tools rows lack the column
     cache_path.write_text(json.dumps(cache, indent=1))
     out_fields = list(dict.fromkeys(list(rows[0].keys()) + FIELDS + EXTRA_FIELDS))
-    with open(a.out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=out_fields)
-        w.writeheader()
-        w.writerows(rows)
+    _, held = write_outputs(rows, a.out, out_fields, a.max_tier)
 
     unknown = sum(1 for r in rows if r["seg_vendor"] == "unknown")
     by_vendor = Counter(r["seg_vendor"] for r in rows)
@@ -268,6 +273,7 @@ def main(argv: list[str] | None = None) -> int:
           f"calls={dict(stats['calls'])} credits={ {k: round(v, 2) for k, v in stats['credits'].items()} } "
           f"conflicts={stats['conflicts']} still_unknown={unknown}", file=sys.stderr)
     print("seg_vendor: " + ", ".join(f"{k}={n}" for k, n in by_vendor.most_common()), file=sys.stderr)
+    print(tier_summary(rows, a.max_tier, held), file=sys.stderr)
     for k, n in stats["unmapped"].most_common():
         print(f"unmapped_vendor_value {k} x{n}  (add to gateway-map.json names)", file=sys.stderr)
     return 0

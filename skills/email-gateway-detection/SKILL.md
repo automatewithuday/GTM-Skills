@@ -2,11 +2,11 @@
 name: email-gateway-detection
 description: "Use when building, cleaning or enriching an outbound list and you need to know which secure email gateway (Proofpoint, Mimecast, Barracuda, Cisco IronPort) or mailbox provider (Google, Microsoft) sits behind each domain; when enterprise emails are not landing; or when the user mentions SEGs, MX records, ESP matching, inbox placement at large companies, or splitting campaigns by email provider, even if they never say gateway; or when they want to know which SaaS tools a company has verified in DNS (HubSpot, Salesforce, Okta, DocuSign, Zendesk) before emailing. Also use when someone is about to pay a data vendor for the MX provider or a tech-stack field, since DNS gives both free."
 license: MIT
-compatibility: Python 3.10+ with dnspython. Paid gap-fill needs LEADMAGIC_API_KEY or PROSPEO_API_KEY in .env, or a logged-in deepline CLI.
+compatibility: Python 3.10+. dnspython for the system resolver, or stdlib only with --resolver doh. Paid gap-fill needs LEADMAGIC_API_KEY or PROSPEO_API_KEY in .env, or a logged-in deepline CLI.
 metadata:
   author: automatewithuday
   source: martechs.io
-  version: "1.1"
+  version: "1.2"
   category: infrastructure
 ---
 
@@ -18,9 +18,9 @@ Domains in, security gateway, mailbox provider and DNS tool fingerprint out. Tag
 
 When asked which gateway or mail provider sits behind a list of domains, which SaaS tools a domain has verified in DNS, or why enterprise emails are not landing:
 
-1. Gather inputs: a CSV with a `domain` or `email` column; whether the user has a LeadMagic or Prospeo key or a logged-in Deepline CLI; whether they want only the unknowns filled (default) or every row cross-checked (`--all`).
-2. Run `python scripts/detect_gateway.py --in <csv> --out <csv>` from this folder. Do not classify MX hosts by hand or in prose; the script and `references/gateway-map.json` are the source of truth.
-3. Report: the per-vendor counts and credits from stderr, how many rows have `seg_conflict=true`, any `unmapped_vendor_value` lines (add those to the map), the most common `dns_tools` slugs if the user asked about tools, and the routing table below applied to the result.
+1. Gather inputs: a CSV with a `domain` or `email` column; whether the user has a LeadMagic or Prospeo key or a logged-in Deepline CLI; whether they want only the unknowns filled (default) or every row cross-checked (`--all`); whether the sending domains are new (then add `--max-tier 1`, see Ramp rules).
+2. Run `python scripts/detect_gateway.py --in <csv> --out <csv>` from this folder. Do not classify MX hosts by hand or in prose; the script and `references/gateway-map.json` are the source of truth. If it exits with `resolver preflight failed`, DNS is blocked where you are: retry with `--resolver doh`, and if that fails too, run it from a machine with network access rather than tagging by hand.
+3. Report: the per-vendor and per-tier counts and credits from stderr, how many rows were held by the gate, how many have `seg_conflict=true`, any `unmapped_vendor_value` lines (add those to the map), the most common `dns_tools` slugs if the user asked about tools, and the routing table below applied to the result.
 
 Do not: treat LeadMagic `mx_gateway` as a gateway signal, or pay a vendor for every row when DNS already answered most of them.
 
@@ -31,7 +31,9 @@ One command. Input is any CSV with a `domain` or `email` column.
 pip install dnspython
 python scripts/detect_gateway.py --in domains.csv --out final.csv
 ```
-It runs the free DNS lookup on every row, then LeadMagic only on the rows DNS could not classify. `final.csv` keeps every input column and adds `seg_vendor`, `mailbox_provider` and `dns_tools`, which is all downstream needs. The stderr summary lists counts per vendor, which route each vendor used, and credits spent.
+It runs the free DNS lookup on every row, then LeadMagic only on the rows DNS could not classify. `final.csv` keeps every input column and adds `seg_vendor`, `mailbox_provider`, `inbox_tier` and `dns_tools`, which is all downstream needs. The stderr summary lists counts per vendor and per tier, which route each vendor used, and credits spent.
+
+No dnspython, or raw DNS blocked (a serverless task, an HTTP-only sandbox)? Add `--resolver doh`: the same lookups go over HTTPS to Google's JSON resolver, with Cloudflare as fallback, stdlib only. Starting a campaign on fresh sending domains? Add `--max-tier 1` to get a Google-only file first (Ramp rules below).
 
 **Keys.** The paid gap-fill needs one of two things. An own key always wins when both are present:
 - Your own vendor key: `LEADMAGIC_API_KEY` (and `PROSPEO_API_KEY` if you use Stage 2) in the environment or a `.env` file in the working directory. Calls go straight to the vendor on your account.
@@ -58,6 +60,7 @@ Every lead leaves this skill with these fields appended. Nothing else is require
 | `vendor_raw` | `prospeo:Proofpoint leadmagic:Proofpoint/Proofpoint/gateway=True` | raw vendor labels from Stages 2 and 3, for reviewing conflicts and unmapped values. Empty until a paid stage runs |
 | `email_status` | `valid`, `valid_catch_all`, `catch_all`, `invalid`, `unknown`, empty | LeadMagic verdict from Stage 3, free byproduct of the gateway check |
 | `dns_tools` | `atlassian\|docusign\|hubspot\|okta\|salesforce` | sorted, pipe-separated vendor slugs from TXT verification tokens and SPF includes, mapped through `tools` in `gateway-map.json`. Free, from the same Stage 1 TXT query. Empty when nothing matched |
+| `inbox_tier` | `1`, `2`, `3`, `4`, empty | inbox difficulty, derived from `seg_vendor` + `mailbox_provider` after every stage: `1` Google direct, `2` Microsoft direct, `3` Zoho, self-hosted or still `unknown`, `4` behind any named gateway. Empty when `seg_status` is not `ok`. Drives the ramp gate (`--max-tier`) |
 
 ## The waterfall
 
@@ -65,14 +68,15 @@ DNS goes first because MX records are the ground truth the paid tools read too. 
 
 **Stage 0, at list build (Prospeo search), optional.** If the list is being pulled from Prospeo anyway, use the `company_email_provider` filter to split `Proofpoint` and `Mimecast` accounts out before pulling contacts. Barracuda and Cisco are not filterable here; they fall under `Other` and get caught in Stage 1.
 
-**Stage 1, free (DNS).** Runs inside `detect_gateway.py`, or on its own with `scripts/mx_lookup.py --in leads.csv --out tagged.csv`. One lookup per unique domain, cached with a TTL (default 45 days). Classification:
+**Stage 1, free (DNS).** Runs inside `detect_gateway.py`, or on its own with `scripts/mx_lookup.py --in leads.csv --out tagged.csv`. One lookup per unique domain, cached with a TTL (default 45 days). Two resolvers, same answers: `--resolver system` (dnspython, the machine's resolver) or `--resolver doh` (`https://dns.google/resolve?name=<domain>&type=MX` and `type=TXT` as JSON, Cloudflare's `dns-query` endpoint on any HTTP error, 429 or SERVFAIL; stdlib only). `auto`, the default, is `system` when dnspython imports and `doh` otherwise. Before any row is tagged the script resolves `gmail.com` once as a canary and exits without writing if that fails, because a walled resolver answers NXDOMAIN for every name and those answers would otherwise be cached as dropped leads. Classification:
 1. Walk MX hosts in preference order; first host matching a gateway suffix sets `seg_vendor`.
 2. No gateway and a host matches Google/Microsoft/Zoho: `seg_vendor=none`, provider from MX.
 3. Otherwise read the SPF TXT record: `include:spf.protection.outlook.com` means Microsoft, `include:_spf.google.com` means Google. This is how M365 behind Proofpoint gets detected.
 4. Nothing matched: `seg_vendor=unknown`, go to Stage 2.
 5. From the same TXT answer, every string starting with a prefix in `tools.txt_prefixes` and every `tools.spf_includes` substring of the SPF record adds its slug to `dns_tools`.
+6. `inbox_tier` is derived from the result (and derived again after Stages 2 and 3, since they can move a row out of `unknown`).
 
-Cache entries written before `dns_tools` existed are looked up once more so the column fills; after that the TTL applies as before.
+Cache entries written before `dns_tools` existed are looked up once more so the column fills; after that the TTL applies as before. `inbox_tier` is computed from cached fields, so older cache entries get it without a lookup.
 
 **Stage 3, gap-fill and cross-check (LeadMagic, 0.09 Deepline credits or 0.25 LeadMagic credits on your own key).** The default paid stage in `detect_gateway.py`. It calls `leadmagic_email_validation` once per `unknown` domain (the row's email, or `info@domain` when there is none) and reads `mx_security_gateway`. `mx_gateway` is never null: on a plain Google or Microsoft domain it holds the mailbox host name, so only the boolean decides. Rows still `unknown` are filled with `seg_source=leadmagic`; a self-hosted domain with `mx_security_gateway=false` becomes `none` with `mailbox_provider=other`. With `--all` it runs on every row instead: a disagreement with DNS then sets `seg_conflict=true` and keeps the DNS value. Conflicts usually mean a hybrid setup or a stale cache entry.
 ```bash
@@ -97,6 +101,23 @@ Use it for targeting and copy, not deliverability: pick accounts on a competitor
 - Unmatched tokens are silent. To grow the map, run `dig +short TXT <domain>` on a few domains from the list and add the new prefix to `tools.txt_prefixes`, lowercased.
 - Routing is unchanged by `dns_tools`; it feeds segmentation and first lines only.
 
+## Ramp rules (new sending domains)
+
+Detection says *what* is behind each domain. The ramp gate says *when* a campaign is allowed to touch each tier. The point: on a brand-new sending domain, send to the inboxes most likely to accept you first, get a clean read on which message gets replies, and only then spend your early reputation on the hard ones. Playing with the net down, until you know what works.
+
+| inbox_tier | Who | Unlock when |
+|---|---|---|
+| `1` | Google Workspace, direct | day one on any domain |
+| `2` | Microsoft 365, direct | the tier-1 campaign has a reply baseline you trust (default: 2 weeks or ~1,000 sends, whichever first) and bounce rate is under 2% |
+| `3` | Zoho, self-hosted, still `unknown` | with tier 2, once a winning message exists |
+| `4` | behind Proofpoint, Mimecast, Barracuda, Cisco, other named gateway | only the proven message, in the per-gateway campaigns below, from a domain that has been sending for a month or more |
+
+Mechanics: `--max-tier N` on either script writes rows above `N` to `<out>.held.csv` with the same columns; nothing is dropped. Start with `--max-tier 1`, re-run the held file with `--max-tier 2` when tier 2 unlocks, and so on. The cache makes the re-runs free. Rows with an empty tier (bad `seg_status`) stay in the main file so the drop rules in `references/errors.md` still apply to them.
+
+Tier 2 is deliberately not folded into tier 1. Microsoft direct is bimodal: a default-config tenant accepts about as readily as Google, a tenant with aggressive Defender policies behaves like a gateway. The SPF step is what tells M365-direct (tier 2) from M365-behind-Proofpoint (tier 4); keep both labels, do not collapse them into "Outlook".
+
+The thresholds above are defaults to tune, not findings. Replace them with your own reply and bounce numbers per tier and record what you changed in Learnings.
+
 ## Routing rules
 
 | seg_vendor | Route |
@@ -110,6 +131,7 @@ Use it for targeting and copy, not deliverability: pick accounts on a competitor
 | any gateway on a Tier 1 account | multichannel track, not email-only |
 | `seg_status` not `ok` | drop, except `timeout`/`servfail` which rerun |
 | `seg_conflict` = `true` | send as tagged, but pull these rows (`vendor_raw` shows both answers) and check one MX record by hand before the next list |
+| `inbox_tier` above the campaign's current gate | hold (`<out>.held.csv`), release when the tier unlocks |
 
 One campaign per major gateway is the point of the whole skill: it is the only way to learn what actually lands per gateway instead of reading one blended reply rate.
 
@@ -120,7 +142,7 @@ Per 10,000 leads across roughly 2,500 unique domains. Deepline credit prices obs
 | Stage | Calls | Cost |
 |---|---|---|
 | 0 Prospeo filter | part of search | no extra |
-| 1 DNS | ~2,500 MX + 2,500 TXT lookups, fewer on rerun | $0 |
+| 1 DNS | ~2,500 MX + 2,500 TXT lookups, fewer on rerun; same count over DoH | $0 |
 | 2 Prospeo enrich | only unknowns, typically a small share | 0.55 credits per matched company; a repeat call on the same domain was charged 0 |
 | 3 LeadMagic validation, default | only unknown domains, typically a small share | 0.09 Deepline credits (0.25 on your own key) per definitive result, 0 for `unknown` |
 | 3 LeadMagic validation, `--all` | one call per domain, ~2,500 | ~225 Deepline credits or ~625 LeadMagic credits, no extra for gateway fields |
@@ -135,6 +157,9 @@ Per 10,000 leads across roughly 2,500 unique domains. Deepline credit prices obs
 - Adding a gateway host or vendor label in code. Both belong in `references/gateway-map.json`; the script reads it.
 - Paying Prospeo for the label when LeadMagic returns the same signal for less. Use Stage 2 only when the label is already in an export you have.
 - Editing `seg_vendor` on a conflict row. `seg_conflict=true` is a review flag; the DNS value stays until a human checks.
+- Reading "Google is easier than Outlook" as "tier 2 is safe enough to merge with tier 1". It is not; see Ramp rules.
+- Hammering the public DoH resolvers with an uncached list of tens of thousands of domains. Keep one `.seg_cache.json`; the script already falls back to Cloudflare on a 429, but the cache is what keeps you under the limit in the first place.
+- Ignoring `resolver preflight failed`. It means the environment cannot see DNS; every verdict it would have produced is noise.
 
 ## Errors
 
@@ -155,7 +180,7 @@ Carry these into copy and sending decisions. Update this section as campaign dat
 
 ## Files
 
-- `scripts/mx_lookup.py`: Stage 1 on its own, stdlib plus `dnspython`. `detect_gateway.py` imports it.
+- `scripts/mx_lookup.py`: Stage 1 on its own, both resolvers (`DnsClient` on dnspython, `DohClient` on stdlib), `inbox_tier`, the ramp gate and the preflight canary. `detect_gateway.py` imports it.
 - `scripts/detect_gateway.py`: the one-command entry point. Runs Stage 1 inline, then Stage 3 (and 2 on request), applies the conflict rule. Stdlib only, shells out to the `deepline` CLI.
 - `references/gateway-map.json`: MX suffixes and vendor labels (`names`) per gateway and provider, plus `tools` (TXT token prefixes and SPF includes to slugs) for `dns_tools`. Extend it; do not hardcode hosts, labels or token prefixes elsewhere.
 - `references/vendor-fields.md`: verified Deepline response paths for Prospeo and LeadMagic and the conflict rule. Read before touching Stage 0, 2 or 3.
